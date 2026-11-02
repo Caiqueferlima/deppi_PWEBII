@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/* Tokens do style guide DEPPI (tema claro) */
+@theme {
+  --color-accent: #c2410c;
+  --color-link: #d97706;
+  --color-link-hover: #f59e0b;
+  --color-danger: #b42318;
+
+  --color-ink: #1a1a1a;
+  --color-ink-2: #5c5c5c;
+  --color-ink-3: #6b6b6b;
+
+  --color-page: #faf9f7;
+  --color-surface: #ffffff;
+  --color-sidebar: #f4f3ef;
+  --color-surface-2: #f1efeb;
+  --color-line: #e4e1db;
+  --color-line-strong: #d3d0c9;
+
+  --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background-color: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Listras 135° (10 px / período 20 px) usadas nas capas */
+@utility bg-stripes {
+  background-image: repeating-linear-gradient(
+    135deg,
+    #eceae4 0 10px,
+    #f7f6f3 10px 20px
+  );
+}
