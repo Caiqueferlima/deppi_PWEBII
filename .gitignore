@@ -1,5 +1,7 @@
 node_modules/
 dist/
+coverage/
+back/uploads/*
 .env
 .env.*
 !.env.example
