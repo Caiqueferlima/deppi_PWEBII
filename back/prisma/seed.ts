@@ -170,12 +170,13 @@ async function main() {
 
   // ─── 4. INSTITUIÇÃO ───────────────────────────────────────────────────────
   const instituicao = await prisma.instituicao.upsert({
-    where: { sigla: 'IFCE-CED' },
+    where: { cnpj: '10744098000145' },
     update: {},
     create: {
       nome:     'IFCE Campus Cedro',
-      sigla:    'IFCE-CED',
-      endereco: 'Alameda José Quintino, s/n - Prado',
+      campus:   'Cedro',
+      cidade:   'Cedro',
+      cnpj:     '10744098000145',
     },
   })
 

@@ -3,6 +3,7 @@ import { API_URL } from "../config/api";
 import {
   clearTokens,
   getRefreshToken,
+  saveAccessToken,
   saveTokens,
 } from "../lib/tokenStorage";
 
@@ -73,4 +74,34 @@ export async function logout(): Promise<void> {
   } finally {
     clearTokens();
   }
+}
+
+export async function refreshAccessToken(): Promise<string> {
+  const refreshToken = getRefreshToken();
+
+  if (!refreshToken) {
+    clearTokens();
+    throw new Error("Sua sessão expirou. Faça login novamente.");
+  }
+
+  const response = await fetch(`${API_URL}/autenticacao/refresh`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ refreshToken }),
+  });
+  const result: unknown = await response.json().catch(() => null);
+
+  if (
+    !response.ok ||
+    typeof result !== "object" ||
+    result === null ||
+    typeof (result as Record<string, unknown>).accessToken !== "string"
+  ) {
+    clearTokens();
+    throw new Error("Sua sessão expirou. Faça login novamente.");
+  }
+
+  const accessToken = (result as Record<string, string>).accessToken;
+  saveAccessToken(accessToken);
+  return accessToken;
 }

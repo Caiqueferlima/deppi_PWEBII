@@ -49,7 +49,7 @@ function Icon({ name }: { name: IconName }) {
 const navigation = [
   { label: "Início", icon: "home" as const, active: true },
   { label: "Cursos", icon: "school" as const },
-  { label: "Instituições", icon: "building" as const },
+  { label: "Instituições", icon: "building" as const, href: "/instituicoes" },
   { label: "Usuários", icon: "users" as const },
   { label: "Relatórios", icon: "chart" as const },
   { label: "Perfil", icon: "user" as const },
@@ -91,7 +91,7 @@ export default function AdminHome() {
           {navigation.map((item) => (
             <Link
               key={item.label}
-              to={item.active ? "/inicio" : "#"}
+              to={item.href ?? (item.active ? "/inicio" : "#")}
               className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
                 item.active
                   ? "bg-[#f0dfd4] font-medium text-accent"

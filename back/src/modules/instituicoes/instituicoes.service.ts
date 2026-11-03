@@ -15,7 +15,7 @@ export class InstituicoesService {
   static async list() {
     return prisma.instituicao.findMany({
       include: {
-        _count: { select: { usuarios: true, cursos: true } },
+        _count: { select: { usuarios: true, cursos: true, departamentos: true } },
       },
       orderBy: { createdAt: "desc" },
     });
@@ -25,7 +25,7 @@ export class InstituicoesService {
     const instituicao = await prisma.instituicao.findUnique({
       where: { id },
       include: {
-        _count: { select: { usuarios: true, cursos: true } },
+        _count: { select: { usuarios: true, cursos: true, departamentos: true } },
       },
     });
 
@@ -37,12 +37,12 @@ export class InstituicoesService {
   }
 
   static async create(data: CreateInstituicaoDTO) {
-    const siglaExists = await prisma.instituicao.findUnique({
-      where: { sigla: data.sigla },
+    const cnpjExists = await prisma.instituicao.findUnique({
+      where: { cnpj: data.cnpj },
     });
 
-    if (siglaExists) {
-      throw new AppError("Já existe uma instituição com esta sigla.", 409);
+    if (cnpjExists) {
+      throw new AppError("Já existe uma instituição com este CNPJ.", 409);
     }
 
     return prisma.instituicao.create({ data: stripUndefined(data) as any });
@@ -51,13 +51,13 @@ export class InstituicoesService {
   static async update(id: string, data: UpdateInstituicaoDTO) {
     await this.getById(id);
 
-    if (data.sigla) {
-      const siglaExists = await prisma.instituicao.findUnique({
-        where: { sigla: data.sigla },
+    if (data.cnpj) {
+      const cnpjExists = await prisma.instituicao.findUnique({
+        where: { cnpj: data.cnpj },
       });
 
-      if (siglaExists && siglaExists.id !== id) {
-        throw new AppError("Já existe uma instituição com esta sigla.", 409);
+      if (cnpjExists && cnpjExists.id !== id) {
+        throw new AppError("Já existe uma instituição com este CNPJ.", 409);
       }
     }
 
@@ -79,10 +79,17 @@ export class InstituicoesService {
   static async remove(id: string) {
     const instituicao = await this.getById(id);
 
-    // nao exclui se tiver usuarios ou cursos vinculados
-    if (instituicao._count.usuarios > 0 || instituicao._count.cursos > 0) {
+    const { usuarios, cursos, departamentos } = instituicao._count;
+
+    if (usuarios > 0 || cursos > 0 || departamentos > 0) {
+      const vinculos = [
+        usuarios > 0 ? `${usuarios} usuário(s)` : null,
+        cursos > 0 ? `${cursos} curso(s)` : null,
+        departamentos > 0 ? `${departamentos} departamento(s)` : null,
+      ].filter((item): item is string => item !== null);
+
       throw new AppError(
-        "Não é possível excluir: existem usuários ou cursos vinculados a esta instituição.",
+        `Não é possível excluir: existem vínculos com esta instituição (${vinculos.join(", ")}).`,
         400
       );
     }

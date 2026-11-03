@@ -2,14 +2,16 @@ import { z } from "zod";
 
 export const createInstituicaoSchema = z.object({
   nome: z.string().min(2, "Nome inválido"),
-  sigla: z.string().min(2, "Sigla inválida"),
-  endereco: z.string().optional(),
+  campus: z.string().min(2, "Campus inválido"),
+  cidade: z.string().min(2, "Cidade inválida"),
+  cnpj: z.string().regex(/^\d{14}$/, "CNPJ deve conter 14 dígitos"),
 });
 
 export const updateInstituicaoSchema = z.object({
   nome: z.string().min(2).optional(),
-  sigla: z.string().min(2).optional(),
-  endereco: z.string().optional(),
+  campus: z.string().min(2).optional(),
+  cidade: z.string().min(2).optional(),
+  cnpj: z.string().regex(/^\d{14}$/).optional(),
   ativo: z.boolean().optional(),
 });
 

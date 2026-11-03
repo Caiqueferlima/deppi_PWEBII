@@ -1,8 +1,9 @@
 model Instituicao {
   id        String   @id @default(uuid())
   nome      String
-  sigla     String   @unique
-  endereco  String?
+  campus    String
+  cidade    String
+  cnpj      String?  @unique
   ativo     Boolean  @default(true)
   createdAt DateTime @default(now())
 
