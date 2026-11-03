@@ -60,7 +60,7 @@ describe('API básica', () => {
     });
 
     assert.equal(response.status, 400);
-    const body = await response.json();
+    const body = (await response.json()) as { error?: unknown };
     assert(body.error);
   });
 });

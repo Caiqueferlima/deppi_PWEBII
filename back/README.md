@@ -183,6 +183,14 @@ Os testes usam o runner nativo do Node.js e cobrem o healthcheck, respostas
 `404`, proteção de rota autenticada e validação do login. Eles usam uma porta
 temporária e não executam operações no banco.
 
+## Verificação de tipos
+
+Para verificar o TypeScript sem iniciar a API:
+
+```powershell
+npm run check
+```
+
 ## Comandos de manutenção
 
 ```powershell

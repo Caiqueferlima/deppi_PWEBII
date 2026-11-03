@@ -7,6 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "start": "tsc && node dist/server.js",
     "test": "tsx --test test/api.test.ts",
+    "check": "tsc --noEmit",
     "postinstall": "prisma generate"
   },
   "prisma": {

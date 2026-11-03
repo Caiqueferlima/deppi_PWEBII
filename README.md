@@ -206,6 +206,25 @@ Os testes verificam o healthcheck, o retorno de rotas inexistentes, a proteção
 de uma rota autenticada e a validação do corpo de login. Eles iniciam a API em
 uma porta temporária e não alteram o banco de dados.
 
+### Validar os projetos
+
+Backend:
+
+```powershell
+cd C:\Users\Think\Desktop\PWEBII\deppi_PWEBII\back
+npm run check
+```
+
+Frontend:
+
+```powershell
+cd C:\Users\Think\Desktop\PWEBII\deppi_PWEBII\front
+npm run check
+```
+
+Esses comandos executam a verificação de tipos do TypeScript sem iniciar os
+servidores e sem modificar o banco de dados.
+
 ## Solução de problemas
 
 ### Erro de conexão com MySQL
