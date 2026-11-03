@@ -1,290 +1,237 @@
-# Arquitetura da API
+# Arquitetura e funcionamento da API
 
-Como a API funciona por dentro: estrutura, fluxo de uma requisição, autenticação,
-autorização (RBAC), validação, tratamento de erros e camada de dados.
+Este documento apresenta o caminho de uma requisição, a organização do código,
+as regras de autenticação e a forma como a API conversa com o MySQL.
 
-> Para **rodar localmente** e a **lista de rotas**, veja o [`README.md`](../README.md).
-> Para **deploy**, veja o [`DEPLOY.md`](../DEPLOY.md).
+Para instalar e executar o projeto, consulte o
+[`README.md`](../README.md). Para localizar endpoints, consulte
+[`rotas.md`](./rotas.md).
 
----
+## 1. Panorama
 
-## Visão geral
+O backend é uma API REST em Node.js, Express 5 e TypeScript. O Prisma organiza
+o acesso ao MySQL por meio do adapter MariaDB. O acesso é protegido por JWT e
+por autorização baseada em papéis e permissões (RBAC).
 
-REST API em **Node.js + Express 5 + TypeScript**, rodada direto com **tsx** (sem
-build em produção). Persistência com **Prisma** (client gerado em
-`prisma/generated`) sobre **MySQL**, usando o **adapter MariaDB**. Autenticação por
-**JWT** e autorização por **RBAC** (papéis × permissões).
-
+```text
+Cliente
+  │ HTTP
+  ▼
+Express / app.ts
+  │ CORS → JSON → logger
+  ▼
+Routes
+  │ auth → papel/permissão → Zod → upload
+  ▼
+Controller
+  ▼
+Service
+  ▼
+Prisma adapter MariaDB
+  ▼
+MySQL
 ```
-Cliente ──HTTP──> Express (app.ts) ──> middlewares globais ──> rotas do módulo
-                                                                    │
-                                              middlewares da rota (auth, RBAC, Zod)
-                                                                    │
-                                                       Controller ──> Service ──> Prisma ──> MySQL
-```
 
----
+## 2. Organização do código
 
-## Estrutura de pastas
-
-```
+```text
 src/
-├─ server.ts                 # sobe o HTTP server (usa process.env.PORT)
-├─ app.ts                    # cria o app Express, registra middlewares e rotas
-├─ lib/
-│  └─ prisma.ts              # instancia o PrismaClient (adapter MariaDB + SSL opcional)
-├─ middlewares/              # peças reutilizáveis do pipeline de request
-│  ├─ auth.middleware.ts         # valida o JWT (Bearer) e popula req.user
-│  ├─ authorization.middleware.ts# checkRole / checkPermission (RBAC)
-│  ├─ validateZod.middleware.ts  # valida body/params/query com Zod
-│  ├─ cors.middleware.ts         # CORS configurável por env
-│  ├─ logger.middleware.ts       # loga método, rota, status e tempo
-│  ├─ error.middleware.ts        # notFound + handler global de erros
-│  └─ upload*.middleware.ts      # uploads via Multer (curso, perfil, documentos)
-├─ modules/                  # um diretório por domínio
-│  └─ <modulo>/
-│     ├─ <modulo>.routes.ts      # define as rotas e os middlewares de cada uma
-│     ├─ <modulo>.controller.ts  # lê req, chama o service, devolve res
-│     ├─ <modulo>.service.ts     # regra de negócio + acesso ao Prisma
-│     └─ <modulo>.schema.ts      # schemas Zod (validação e tipos DTO)
-├─ utils/
-│  ├─ AppError.ts            # erro com statusCode para o handler global
-│  ├─ getEnv.ts              # lê env obrigatória (lança se faltar)
-│  ├─ hashToken.ts           # hash de refresh/reset tokens
-│  └─ usersAndProfiles/      # helpers de criação de usuário + perfil
-└─ types/                    # extensões de tipos (ex.: req.user no Express)
+├── server.ts
+├── app.ts
+├── lib/
+│   └── prisma.ts
+├── middlewares/
+│   ├── auth.middleware.ts
+│   ├── authorization.middleware.ts
+│   ├── validateZod.middleware.ts
+│   ├── cors.middleware.ts
+│   ├── logger.middleware.ts
+│   ├── error.middleware.ts
+│   └── upload*.middleware.ts
+├── modules/
+│   └── <domínio>/
+│       ├── <domínio>.routes.ts
+│       ├── <domínio>.controller.ts
+│       ├── <domínio>.service.ts
+│       └── <domínio>.schema.ts
+├── types/
+└── utils/
 
 prisma/
-├─ schema/                   # schema dividido em vários .prisma (um por modelo)
-├─ migrations/               # histórico de migrations (11 até agora)
-├─ generated/                # client do Prisma gerado (não editar)
-└─ seed.ts                   # popula papéis, permissões, usuários e dados de exemplo
+├── schema/
+├── migrations/
+├── generated/
+└── seed.ts
 ```
 
-**Módulos existentes:** `auth`, `profile`, `cursos`, `professor`, `subscription`
-(inscrições + documentos), `deppi`, `reports`, `instituicoes`, `usuarios`,
-`permissoes`, `departamentos`.
+Os módulos atuais cobrem autenticação, perfis, cursos, professor, inscrições,
+DEPPI, relatórios, instituições, usuários, permissões e departamentos.
 
----
+### Responsabilidade de cada camada
 
-## Fluxo de uma requisição
+- **Routes:** declara método, URL e sequência de middlewares.
+- **Controller:** extrai dados da requisição e monta a resposta.
+- **Service:** concentra regra de negócio e operações do Prisma.
+- **Schema:** valida body, parâmetros e query strings com Zod.
+- **Middleware:** aplica preocupações transversais sem duplicar lógica.
 
-Registrado em [`src/app.ts`](../src/app.ts), nesta ordem:
+## 3. Ciclo de uma requisição
 
-1. **`corsMiddleware`** — libera/bloqueia a origem conforme `CORS_ORIGINS`.
-2. **`express.json()`** — faz o parse do corpo JSON.
-3. **`requestLogger`** — mede o tempo e loga ao finalizar a resposta.
-4. **Rotas do módulo** (`/autenticacao`, `/cursos`, ...). Dentro de cada rota rodam,
-   quando aplicável:
-   - **`authMiddleware`** — exige `Authorization: Bearer <token>` válido.
-   - **`checkRole` / `checkPermission`** — autorização (RBAC).
-   - **`validateZod`** — valida `body` / `params` / `query`.
-   - **`upload*`** (Multer) — quando há envio de arquivo.
-   - **Controller** — orquestra e responde.
-5. **`notFoundHandler`** — se nenhuma rota casou → `404 { "error": "Rota nao encontrada." }`.
-6. **`errorHandler`** — captura erros e padroniza a resposta.
+O [`app.ts`](../src/app.ts) registra as etapas nesta ordem:
 
-O endpoint **`GET /health`** fica fora desse fluxo de negócio e responde `{ "status": "ok" }`.
+1. CORS decide se a origem pode acessar a API.
+2. `express.json()` interpreta corpos JSON.
+3. O logger registra método, caminho, status e duração.
+4. A rota executa autenticação, autorização, validação e upload quando necessário.
+5. O controller chama o service.
+6. O `notFoundHandler` responde `404` se nenhuma rota atender ao caminho.
+7. O `errorHandler` transforma exceções em respostas padronizadas.
 
----
+`GET /health` é um endpoint simples de disponibilidade e retorna
+`{ "status": "ok" }`.
 
-## Padrão de módulo (routes → controller → service)
+## 4. Autenticação e sessão
 
-Cada módulo segue a mesma separação de responsabilidades:
+### Login
 
-- **`routes`** — declara método + caminho e encadeia os middlewares (auth, RBAC, Zod).
-- **`controller`** — camada fina: lê `req`, chama o service e devolve o `res`. Não
-  contém regra de negócio.
-- **`service`** — regra de negócio e todo o acesso ao banco via Prisma. Lança
-  `AppError` quando algo é inválido.
-- **`schema`** — schemas Zod que validam a entrada e geram os tipos (`DTO`).
+`POST /autenticacao/login`:
 
-Isso mantém as regras testáveis e desacopladas do Express.
+1. localiza o usuário e seus papéis;
+2. compara a senha com o hash usando bcrypt;
+3. cria um access token com id, nome, e-mail, papéis e permissões;
+4. cria um refresh token aleatório;
+5. grava somente o hash do refresh token, com validade padrão de sete dias;
+6. devolve os tokens ao cliente.
 
----
+O access token é usado no header `Authorization: Bearer <token>` e expira,
+por padrão, em 15 minutos.
 
-## Autenticação (JWT + refresh token)
+### Renovação e logout
 
-Implementada em [`src/modules/auth`](../src/modules/auth).
+- `POST /autenticacao/refresh` valida o refresh token não expirado e não revogado
+  e emite outro access token.
+- `POST /autenticacao/logout` marca o refresh token como revogado.
+- O access token já emitido continua válido até seu vencimento natural.
 
-### Login (`POST /autenticacao/login`)
+### Recuperação e cadastro
 
-1. Busca o usuário por e-mail (incluindo papéis e permissões).
-2. Compara a senha com `bcrypt.compare` contra o `senhaHash`.
-3. Monta o **payload do access token** com `sub` (id), `name`, `email`, `roles` e
-   `permissions` (lista de `recurso:acao`).
-4. Assina um **access token** JWT (`JWT_SECRET`), expira em **15 min**.
-5. Gera um **refresh token** aleatório (`crypto.randomBytes`), guarda **só o hash**
-   (`hashToken`) na tabela `refresh_tokens` com validade de **7 dias**, e devolve o
-   token cru ao cliente.
+- `POST /autenticacao/esqueci-senha` cria um token de recuperação com validade
+  de uma hora; em desenvolvimento, o token pode ser exibido para facilitar testes.
+- `POST /autenticacao/redefinir-senha` valida e consome o token.
+- `POST /autenticacao/registro` cria um usuário com papel ALUNO e senha protegida
+  por bcrypt.
 
-> O access token carrega roles e permissions, então a autorização não precisa
-> consultar o banco a cada request — o middleware lê tudo do próprio token.
+## 5. Autorização RBAC
 
-### Renovação (`POST /autenticacao/refresh`)
+O token carrega dois conjuntos de dados:
 
-Recebe o refresh token, procura pelo **hash**, valida (não revogado, não expirado) e
-emite um novo access token. Não gera um novo refresh (o mesmo vale por 7 dias).
-
-### Logout (`POST /autenticacao/logout`)
-
-Marca o refresh token como `revoked` — o access token continua válido até expirar
-(15 min).
-
-### Recuperação de senha
-
-- `POST /autenticacao/esqueci-senha` — gera um token de reset (guarda o hash,
-  validade de 1 h). Resposta genérica para não revelar se o e-mail existe; **fora de
-  produção**, o token cru é retornado para facilitar o teste.
-- `POST /autenticacao/redefinir-senha` — valida o token (existe, não usado, não
-  expirado) e troca a senha em transação, marcando o token como usado.
-
-### Cadastro (`POST /autenticacao/registro`)
-
-Cria o usuário já com o papel **ALUNO** e a senha em `bcrypt` hash.
-
----
-
-## Autorização — RBAC (papéis × permissões)
-
-Dois níveis de checagem, ambos lendo dados do **token** (`req.user`):
-
-### `checkRole(...papeis)`
-
-Libera se o usuário tiver **pelo menos um** dos papéis exigidos. Ex.:
-`checkRole('DEPPI', 'PROFESSOR')`. Falha → `403 papel insuficiente`.
-
-### `checkPermission(recurso, acao)`
-
-Libera se o token contiver a permissão `recurso:acao` (ex.: `inscricao:create`).
-Falha → `403 permissao insuficiente`.
-
-### Modelo por trás
-
+```text
+roles:       ["PROFESSOR"]
+permissions:  ["curso:create", "curso:read"]
 ```
+
+- `checkRole(...)` exige pelo menos um papel informado.
+- `checkPermission(recurso, acao)` exige a permissão
+  `recurso:acao`.
+
+O relacionamento persistido é:
+
+```text
 User ──< UserPapel >── Papel ──< PapelPermissao >── Permissao
 ```
 
-- **Papel** — `ADMIN`, `DEPPI`, `PROFESSOR`, `ALUNO` (tabela `papeis`).
-- **Permissao** — par único `recurso` + `acao` (tabela `permissoes`), ex.:
-  `curso:create`, `inscricao:update`.
-- Um usuário tem vários papéis; cada papel tem várias permissões. No login, a API
-  achata isso em `roles[]` e `permissions[]` dentro do JWT.
+Os papéis principais são `ADMIN`, `DEPPI`, `PROFESSOR` e `ALUNO`. O módulo
+`permissoes` permite ao ADMIN administrar esses vínculos.
 
-O vínculo papel↔permissão e usuário↔papel é gerenciado pelo módulo `permissoes`
-(somente ADMIN). O seed já cria os papéis, as permissões e as atribuições padrão.
+## 6. Validação e erros
 
----
+`validateZod` valida `body`, `params` ou `query` antes do controller. Falhas
+geram status `400` com os detalhes do Zod. O `req.query` é somente leitura no
+Express 5; por isso, o middleware valida a query e o controller lê o valor
+original.
 
-## Validação (Zod)
+As regras de negócio usam `AppError(mensagem, statusCode)`. O handler global:
 
-`validateZod(schema, 'body' | 'params' | 'query')` valida a parte indicada da
-requisição. Em erro, retorna `400` com `error` no formato `flatten()` do Zod.
+- preserva a mensagem e o status de um `AppError`;
+- transforma erros inesperados em `500`;
+- não expõe detalhes internos;
+- responde `404` com `{"error":"Rota nao encontrada."}` para caminhos inexistentes.
 
-> Nota do Express 5: `req.query` é somente leitura. Para `query`, o middleware
-> **valida mas não reatribui** — o controller lê de `req.query` direto. Para `body` e
-> `params`, o valor validado substitui o original.
+O formato geral de falha é:
 
----
+```json
+{ "error": "mensagem ou detalhe" }
+```
 
-## Tratamento de erros
+## 7. Arquivos e CORS
 
-- **`AppError(mensagem, statusCode)`** — erro de negócio com status HTTP explícito.
-  Os services lançam `AppError` (ex.: `throw new AppError('Email ou senha inválidos!', 401)`).
-- **`errorHandler`** (global) — se for `AppError`, responde
-  `{ statusCode, { error: mensagem } }`. Qualquer outro erro é logado no servidor e
-  vira `500 { "error": "Erro interno do servidor." }`, sem vazar detalhes internos.
-- **`notFoundHandler`** — rota inexistente vira `404 { "error": "Rota nao encontrada." }`.
+Há três tipos de upload:
 
-Padrão de resposta de erro em toda a API: `{ "error": <mensagem ou detalhe> }`.
+| Campo | Finalidade |
+|---|---|
+| `imagem` | capa de curso |
+| `foto` | foto de perfil |
+| `files` | até dez documentos de inscrição |
 
----
+Os arquivos ficam em `uploads/` e são servidos pelo caminho `/uploads`. O disco
+gratuito do Render é efêmero; portanto, uploads de produção devem migrar para
+um storage persistente.
 
-## CORS, logging e uploads
+`CORS_ORIGINS` recebe origens separadas por vírgula. Em desenvolvimento, vazio
+libera todas as origens; requisições sem `Origin`, como as do Postman, são aceitas.
 
-- **CORS** — origens permitidas vêm de `CORS_ORIGINS` (separadas por vírgula). Sem a
-  env, libera todas (útil em dev). Requisições sem `origin` (Postman, server-to-server)
-  passam. Métodos: `GET/POST/PUT/PATCH/DELETE/OPTIONS`; headers: `Content-Type`,
-  `Authorization`; `credentials: true`.
-- **Logger** — cada request loga `[timestamp] MÉTODO /rota STATUS - Xms`.
-- **Uploads (Multer)** — três middlewares: capa de curso (`imagem`), foto de perfil
-  (`foto`) e documentos de inscrição (`files`, até 10). Os arquivos são servidos
-  estaticamente em `/uploads`. ⚠️ No plano free do Render o disco é efêmero — os
-  uploads somem a cada deploy.
+## 8. Persistência
 
----
+[`src/lib/prisma.ts`](../src/lib/prisma.ts) cria o client com o adapter MariaDB
+e pool de cinco conexões. `DATABASE_SSL=true` habilita SSL para bancos em nuvem.
 
-## Camada de dados (Prisma + MySQL)
+O schema foi dividido em arquivos dentro de `prisma/schema/`, e
+[`prisma.config.ts`](../prisma.config.ts) informa ao Prisma onde encontrá-los.
+As migrations ficam em `prisma/migrations/`; o client em `prisma/generated/`
+é recriado por `npx prisma generate` e não deve ser editado manualmente.
 
-- **Client** — instanciado em [`src/lib/prisma.ts`](../src/lib/prisma.ts) com o
-  **adapter MariaDB** (`@prisma/adapter-mariadb`), pool de 5 conexões.
-- **SSL** — habilitado quando `DATABASE_SSL=true` (obrigatório em MySQL na nuvem, ex.:
-  Aiven). Localmente fica desligado.
-- **Schema dividido** — em vez de um `schema.prisma` único, o schema fica em vários
-  arquivos dentro de `prisma/schema/` (um por modelo), configurado em
-  [`prisma.config.ts`](../prisma.config.ts).
-- **Migrations** — histórico em `prisma/migrations` (11 até agora). Em produção rodam
-  no build do Render (`prisma migrate deploy`). Localmente, `prisma migrate dev`.
-- **Client gerado** — vai para `prisma/generated` (via `prisma generate`, que roda no
-  `postinstall`). Não editar à mão.
+Entidades centrais:
 
-### Principais entidades
+- usuários, perfis e RBAC;
+- cursos e tabelas de apoio;
+- inscrições, histórico e documentos;
+- refresh tokens e tokens de recuperação;
+- instituições, departamentos e relatórios.
 
-- **User** — dados pessoais + `senhaHash`, ligado a uma `Instituicao` e a papéis.
-  Perfis especializados: `PerfilAluno`, `PerfilServidor`, `PerfilProfessor`.
-- **RBAC** — `Papel`, `Permissao`, `UserPapel`, `PapelPermissao`.
-- **CursoExtensao** — o curso e suas tabelas satélite: `CursoMunicipio`,
-  `CursoAtividade`, `CursoFormaAvaliacao`, `CursoFormaDivulgacao`, `MembroEquipe`,
-  `ItemOrcamento`, `Parceria`.
-- **Inscricao** — inscrição de aluno em curso, com `InscricaoHistorico` (auditoria de
-  status) e `InscricaoDocumento` (arquivos).
-- **Auth** — `RefreshToken`, `PasswordResetToken` (guardam sempre o **hash**).
-- **Apoio** — `Instituicao`, `Departamento`, `Relatorio`.
+Uma mudança de status de inscrição ocorre em transação e registra
+`InscricaoHistorico`. Ao liberar uma vaga, a próxima inscrição da lista de
+espera pode ser promovida automaticamente.
 
-### Enums de negócio (principais)
+## 9. Variáveis de ambiente
 
-- `StatusCurso`: `RASCUNHO`, `PUBLICADO`, `EM_ANDAMENTO`, `ENCERRADO`, `CANCELADO`.
-- `StatusInscricao`: `PENDENTE`, `APROVADA`, `REJEITADA`, `CANCELADA`, `LISTA_ESPERA`.
-- `TipoCurso`: `FORMACAO_INICIAL` (≥160h), `FORMACAO_CONTINUADA` (≥40h).
-- Diversos enums de perfil: `Sexo`, `CorRaca`, `RendaFamiliarPerCapita`, etc.
+| Variável | Uso |
+|---|---|
+| `DATABASE_URL` | migrations do Prisma |
+| `DATABASE_HOST` | host MySQL em runtime |
+| `DATABASE_PORT` | porta MySQL; local padrão `3306` |
+| `DATABASE_USER` / `DATABASE_PASSWORD` | credenciais MySQL |
+| `DATABASE_NAME` | banco utilizado |
+| `DATABASE_SSL` | SSL do MySQL, normalmente `false` local |
+| `PORT` | porta HTTP, `3000` local |
+| `NODE_ENV` | ambiente de execução |
+| `JWT_SECRET` | assinatura dos tokens |
+| `JWT_EXPIRES_IN` | validade do access token |
+| `REFRESH_TOKEN_EXPIRES_DAYS` | validade do refresh token |
+| `CORS_ORIGINS` | origens permitidas |
 
-### Regra de negócio de inscrições
+`getEnv` interrompe a inicialização quando uma variável obrigatória não existe.
 
-Toda mudança de status de inscrição roda em **transação** e grava um registro em
-`InscricaoHistorico`. Se uma inscrição `APROVADA` é cancelada/rejeitada, o próximo da
-**lista de espera** é promovido automaticamente.
+## 10. Execução e deploy
 
----
+Localmente, o MySQL é iniciado por `docker compose`, seguido de:
 
-## Variáveis de ambiente
+```powershell
+npx prisma generate
+npx prisma migrate deploy
+npx tsx prisma/seed.ts
+npm run dev
+```
 
-| Variável | Obrigatória | Descrição |
-|---|---|---|
-| `DATABASE_URL` | sim (migrations) | String de conexão usada pelo Prisma Migrate |
-| `DATABASE_HOST` | sim | Host do MySQL (runtime, via adapter) |
-| `DATABASE_PORT` | sim | Porta do MySQL (padrão local: 3308) |
-| `DATABASE_USER` | sim | Usuário do MySQL |
-| `DATABASE_PASSWORD` | sim | Senha do MySQL |
-| `DATABASE_NAME` | sim | Nome do banco |
-| `DATABASE_SSL` | não | `true` para conectar via SSL (MySQL na nuvem) |
-| `PORT` | não | Porta do HTTP server (o Render injeta automaticamente) |
-| `NODE_ENV` | não | `development` / `production` |
-| `JWT_SECRET` | sim | Segredo para assinar/validar o JWT |
-| `JWT_EXPIRES_IN` | não | Validade do access token (padrão 15m) |
-| `REFRESH_TOKEN_EXPIRES_DAYS` | não | Validade do refresh token (padrão 7 dias) |
-| `CORS_ORIGINS` | não | Origens liberadas no CORS (separadas por vírgula) |
-
-`getEnv('X')` lança um erro claro se uma env obrigatória estiver faltando.
-
----
-
-## Infra e deploy (resumo)
-
-- **Local:** MySQL via `docker-compose` (imagem `mysql:8.0`, porta `3308:3306`).
-- **Produção:** API no **Render** (blueprint em [`render.yaml`](../render.yaml)) +
-  MySQL no **Aiven**. A cada push na branch de deploy, o Render reinstala, roda
-  `prisma generate` + `prisma migrate deploy` e sobe a API com `tsx src/server.ts`.
-- **Servidor:** [`src/server.ts`](../src/server.ts) escuta em `process.env.PORT`
-  (injetado pelo Render) ou `8000` como fallback.
-
-O passo a passo completo está em [`DEPLOY.md`](../DEPLOY.md).
+No Render, o build executa `prisma generate` e `prisma migrate deploy`; a API
+usa a porta fornecida pelo ambiente. O procedimento completo está em
+[`DEPLOY.md`](../DEPLOY.md).

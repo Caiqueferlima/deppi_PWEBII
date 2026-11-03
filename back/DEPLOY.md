@@ -1,173 +1,160 @@
-# Deploy da API no Render
+# Publicação da API
 
-Guia para publicar a API no [Render](https://render.com) usando um MySQL hospedado na nuvem.
+Este roteiro publica a API no Render e conecta o serviço a um MySQL externo.
+O Render não oferece MySQL gerenciado; por isso, o banco de produção deve
+ficar em um provedor como Aiven, Clever Cloud ou Railway.
 
-> Por que MySQL externo? O Render **não** oferece MySQL gerenciado (só PostgreSQL),
-> e o seu MySQL local não é acessível pela internet. Então o banco de produção
-> fica num serviço externo gratuito e o Render acessa por lá.
+## 1. Criar o banco em nuvem
 
----
+No Aiven:
 
-## 1. Criar o MySQL grátis (Aiven)
+1. crie uma conta;
+2. selecione **Create service → MySQL**;
+3. escolha o plano disponível e uma região;
+4. aguarde o serviço ficar `Running`;
+5. copie host, porta, usuário, senha e nome do banco em **Connection information**.
 
-Recomendado: [Aiven](https://aiven.io) — plano free de MySQL, sem cartão.
+Monte a URL usada pelo Prisma:
 
-1. Crie conta em https://console.aiven.io/signup.
-2. **Create service** > **MySQL**.
-3. Escolha o plano **Free**, um provedor/região (qualquer um) e crie.
-4. Aguarde o status virar **Running** (alguns minutos).
-5. Na aba **Overview** > **Connection information**, anote:
-   - **Host** (ex: `mysql-xxxx.aivencloud.com`)
-   - **Port** (ex: `12345`)
-   - **User** (ex: `avnadmin`)
-   - **Password**
-   - **Database name** (ex: `defaultdb`)
-
-> Alternativas free: [Clever Cloud](https://www.clever-cloud.com) (MySQL DEV) ou
-> [Railway](https://railway.app) (MySQL, com crédito de trial).
-
-### Monte a DATABASE_URL
-
-Com os dados acima, a URL fica assim (necessária para as migrations):
-
-```
-mysql://USER:PASSWORD@HOST:PORT/DATABASE?sslaccept=accept_invalid_certs
+```text
+******HOST:PORT/DATABASE?sslaccept=accept_invalid_certs
 ```
 
 Exemplo:
+
+```text
+******mysql-exemplo.aivencloud.com:12345/defaultdb?sslaccept=accept_invalid_certs
 ```
-mysql://avnadmin:senha123@mysql-xxxx.aivencloud.com:12345/defaultdb?sslaccept=accept_invalid_certs
+
+Use `sslaccept=accept_invalid_certs` na URL do Prisma. A opção
+`ssl-mode=REQUIRED`, exibida por alguns clientes MySQL, não é o parâmetro
+esperado pelo Prisma Migrate. Faça URL-encode de caracteres especiais da senha.
+
+## 2. Preparar o repositório
+
+Antes do deploy, confirme que o código está no GitHub e que o
+[`render.yaml`](./render.yaml) está na raiz do backend. A branch conectada ao
+Blueprint deve conter as migrations e o `package.json`.
+
+## 3. Criar o serviço no Render
+
+No painel do Render:
+
+1. escolha **New → Blueprint**;
+2. conecte o repositório;
+3. selecione a branch desejada;
+4. revise o serviço criado a partir do `render.yaml`;
+5. preencha as variáveis marcadas como `sync: false`;
+6. clique em **Apply** ou **Create**.
+
+Configure:
+
+| Variável | Conteúdo |
+|---|---|
+| `DATABASE_URL` | URL completa do banco Aiven |
+| `DATABASE_HOST` | host informado pelo Aiven |
+| `DATABASE_PORT` | porta informada pelo Aiven |
+| `DATABASE_USER` | usuário do Aiven |
+| `DATABASE_PASSWORD` | senha do Aiven |
+| `DATABASE_NAME` | nome do banco |
+| `DATABASE_SSL` | `true` |
+| `CORS_ORIGINS` | origem do frontend, separada por vírgula |
+
+O Render injeta `PORT`. O `JWT_SECRET` deve ser gerado pelo próprio ambiente ou
+definido como um segredo forte; nunca reutilize a chave local.
+
+## 4. Build e verificação
+
+O deploy deve executar:
+
+```text
+prisma generate
+prisma migrate deploy
 ```
 
-> **Atenção ao SSL:** o Aiven mostra a URI com `?ssl-mode=REQUIRED`, mas isso é
-> parâmetro do cliente MySQL — o **Prisma migrate** não entende. Troque por
-> `?sslaccept=accept_invalid_certs` para as migrations conectarem via SSL.
->
-> Se a senha tiver caracteres especiais (`@ : / ? #`), faça URL-encode deles.
+Depois que o serviço iniciar, use a URL exibida pelo Render, por exemplo:
 
----
+```text
+https://api-ger-extensao-zcrp.onrender.com/health
+```
 
-## 2. Subir a API no Render (Blueprint)
+A resposta esperada é:
 
-O arquivo [`render.yaml`](./render.yaml) já configura o serviço.
+```json
+{ "status": "ok" }
+```
 
-1. Dê push da branch **feat/infra-global** no GitHub (é a branch que o Blueprint
-   deploya; depois você pode mergear pra MAIN e trocar a branch no Render).
-2. No Render: **New** > **Blueprint** > conecte o repositório `API-GER-EXTENSAO`.
-3. O Render lê o `render.yaml` e mostra o serviço `api-ger-extensao`.
-4. Ele vai pedir as variáveis marcadas como `sync: false`. Preencha:
+A rota `/` não é uma página inicial. Um JSON `404` nela significa apenas que
+não existe uma rota raiz.
 
-   | Variável            | Valor                                             |
-   |---------------------|---------------------------------------------------|
-   | `DATABASE_URL`      | a URL montada no passo 1                           |
-   | `DATABASE_HOST`     | Host do Aiven                                      |
-   | `DATABASE_PORT`     | Port do Aiven                                      |
-   | `DATABASE_USER`     | User do Aiven                                      |
-   | `DATABASE_PASSWORD` | Password do Aiven                                  |
-   | `DATABASE_NAME`     | Database do Aiven                                  |
-   | `CORS_ORIGINS`      | origens do front (ou vazio p/ liberar todas)       |
+## 5. Popular o banco remoto (opcional)
 
-   > `JWT_SECRET` é gerado automaticamente. `PORT` é injetado pelo Render.
-   > `DATABASE_SSL=true` já vem definido no `render.yaml` (SSL obrigatório no Aiven).
-
-5. **Apply / Create**. O build roda `prisma generate` + `prisma migrate deploy`
-   (cria as tabelas no banco novo) e sobe a API.
-6. Ao terminar, a API fica no ar. **Atenção:** o Render acrescenta um sufixo
-   aleatório ao domínio, então a URL final **não** é exatamente o nome do serviço.
-   A URL real deste deploy é:
-
-   ```
-   https://api-ger-extensao-zcrp.onrender.com
-   ```
-
-   A URL exata aparece no log do deploy (`Available at your primary URL ...`) e no
-   topo do serviço no painel do Render. Teste:
-   `GET https://api-ger-extensao-zcrp.onrender.com/health` deve retornar `{ "status": "ok" }`.
-
-   > Abrir a **raiz** (`/`) no navegador retorna `{"error":"Rota nao encontrada."}` —
-   > isso é **normal**: a API não tem página inicial, só endpoints. Essa resposta em
-   > JSON, aliás, confirma que a API está no ar. Use `/health` para o "sinal de vida".
-
----
-
-## 3. (Opcional) Popular o banco com dados de teste
-
-O banco de produção sobe **vazio** (só com as tabelas). Para criar os usuários de
-teste, rode o seed a partir da sua máquina apontando para o banco da **nuvem**.
-
-### 3.1. Aponte as variáveis para o banco da nuvem
-
-O seu `.env` local aponta para o MySQL de `localhost`. Para os comandos abaixo
-usarem o banco da nuvem, defina as variáveis do Aiven na **mesma janela** do
-PowerShell antes de rodar (o `dotenv` **não** sobrescreve o que você já definiu,
-então os valores abaixo têm prioridade):
+O deploy cria tabelas, mas não necessariamente registros de demonstração. Para
+executar o seed sem atingir o MySQL local, abra uma nova janela PowerShell e
+defina todas as variáveis antes do comando:
 
 ```powershell
-$env:DATABASE_HOST="mysql-xxxx.aivencloud.com"
-$env:DATABASE_PORT="18805"
+cd C:\caminho\para\deppi_PWEBII\back
+$env:DATABASE_HOST="mysql-exemplo.aivencloud.com"
+$env:DATABASE_PORT="12345"
 $env:DATABASE_USER="avnadmin"
 $env:DATABASE_PASSWORD="sua-senha"
 $env:DATABASE_NAME="defaultdb"
 $env:DATABASE_SSL="true"
-$env:DATABASE_URL="mysql://avnadmin:sua-senha@mysql-xxxx.aivencloud.com:18805/defaultdb?sslaccept=accept_invalid_certs"
-```
-
-> ⚠️ Essas variáveis valem **só naquela janela**. Abriu outro terminal? Defina de
-> novo — senão os comandos do Prisma vão mexer no banco `localhost` por engano.
-> **Sempre confira** a linha `Datasource "db": MySQL database "..." at "..."` que o
-> Prisma imprime: precisa mostrar `defaultdb ... aivencloud.com`, e não `localhost`.
-
-### 3.2. Se o DNS da sua rede não resolver o host do Aiven
-
-Alguns roteadores têm o DNS quebrado e o Node não acha o endereço, dando o erro
-`getaddrinfo ENOTFOUND mysql-xxxx.aivencloud.com`. Para contornar, descubra o IP
-usando o DNS do Google:
-
-```powershell
-nslookup mysql-xxxx.aivencloud.com 8.8.8.8
-```
-
-Copie o `Address` retornado e, num PowerShell **como Administrador**, aponte esse IP
-para o host no arquivo `hosts` do Windows:
-
-```powershell
-Add-Content -Path "$env:windir\System32\drivers\etc\hosts" -Value "IP_DO_AIVEN mysql-xxxx.aivencloud.com"
-ipconfig /flushdns
-```
-
-> O IP do Aiven pode mudar com o tempo. Se voltar a dar `ENOTFOUND`, refaça o
-> `nslookup` e atualize a linha do `hosts`. Correção definitiva: trocar o DNS do
-> Windows/roteador para `8.8.8.8`. **Isso vale só para a sua máquina** — o Render
-> resolve o host normalmente e não precisa de nada disso.
-
-### 3.3. Rode o seed
-
-Com as variáveis apontando para a nuvem:
-
-```powershell
+$env:DATABASE_URL="******mysql-exemplo.aivencloud.com:12345/defaultdb?sslaccept=accept_invalid_certs"
 npx tsx prisma/seed.ts
 ```
 
-Sucesso: `✅ Seed concluída — todas as tabelas populadas.`
+Essas variáveis valem apenas para a janela atual. Antes de rodar migrations,
+seed ou reset, confira no output do Prisma o host e banco exibidos. Eles devem
+ser os do Aiven, nunca `localhost`.
 
-> **Erro de coluna inexistente?** Se o seed reclamar algo como
-> `The column users.fotoPerfil does not exist`, o banco da nuvem está
-> dessincronizado das migrations (marcadas como aplicadas sem terem criado as
-> colunas). Como o banco de produção está vazio, resete-o — isso apaga tudo e
-> reaplica as 11 migrations do zero. **Confira o `Datasource` antes** para não
-> resetar o `localhost` por engano:
->
-> ```powershell
-> npx prisma migrate reset --force
-> ```
+## 6. Corrigir problemas comuns
 
----
+### DNS não resolve o host
 
-## Observações
+Teste outro resolvedor:
 
-- **Plano free do Render** hiberna após ~15 min sem tráfego; a primeira
-  requisição depois disso demora alguns segundos para "acordar".
-- **Uploads (`/uploads`)**: o disco do plano free é efêmero e é apagado a cada
-  deploy/restart. Para arquivos persistentes, use um disco pago do Render ou um
-  storage externo (ex: S3/Supabase Storage) — fica como melhoria futura.
-- **Migrations**: rodam automaticamente no build a cada deploy.
+```powershell
+nslookup mysql-exemplo.aivencloud.com 8.8.8.8
+```
+
+Se necessário, em PowerShell como Administrador, adicione temporariamente o IP
+ao arquivo `hosts`:
+
+```powershell
+Add-Content -Path "$env:windir\System32\drivers\etc\hosts" -Value "IP_DO_AIVEN mysql-exemplo.aivencloud.com"
+ipconfig /flushdns
+```
+
+O IP pode mudar; refaça a consulta quando o erro `ENOTFOUND` voltar.
+
+### Coluna ou migration ausente
+
+Somente se o banco remoto puder ser apagado e recriado, confira primeiro o
+`Datasource` e então execute:
+
+```powershell
+npx prisma migrate reset --force
+npx tsx prisma/seed.ts
+```
+
+Esse procedimento apaga todos os dados do banco apontado pelas variáveis atuais.
+
+## 7. Frontend em produção
+
+No frontend, configure `VITE_API_URL` com a URL real da API:
+
+```env
+VITE_API_URL=https://api-ger-extensao-zcrp.onrender.com
+```
+
+Inclua essa origem em `CORS_ORIGINS` no Render e faça um novo deploy do backend
+se a origem mudar.
+
+## 8. Limitações do plano gratuito
+
+- o Render pode hibernar o serviço após um período sem tráfego;
+- a primeira requisição depois da hibernação pode demorar;
+- arquivos em `uploads/` não são persistentes em disco efêmero;
+- use storage externo ou disco persistente para arquivos importantes.

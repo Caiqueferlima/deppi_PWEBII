@@ -1,236 +1,160 @@
-# Dados da Seed — API GER EXTENSÃO
+# Dados de demonstração do seed
 
-> Execute `npx prisma generate` antes de rodar o seed pela primeira vez.  
-> Para rodar: `npx prisma db seed`
+O seed prepara uma base completa para testar login, perfis, cursos, inscrições,
+relatórios e permissões.
 
----
+## Como executar
 
-## 1. Instituição
+Na pasta `back`, com o banco configurado:
 
-| Nome             | Sigla     | Endereço                            |
-|------------------|-----------|-------------------------------------|
-| IFCE Campus Cedro | IFCE-CED | Alameda José Quintino, s/n - Prado |
+```powershell
+npx prisma generate
+npx tsx prisma/seed.ts
+```
 
----
+Também é possível usar `npx prisma db seed` quando o Prisma estiver configurado
+para chamar o seed. A execução deve ocorrer somente no banco de desenvolvimento
+ou em um banco de teste.
 
-## 2. Usuários
+## Conta e instituição
 
-| Nome             | E-mail                   | Senha          | Papel     |
-|------------------|--------------------------|----------------|-----------|
-| Administrador    | admin@ifce.edu.br        | `admin123`     | ADMIN     |
-| Membro DEPPI     | deppi@ifce.edu.br        | `deppi123`     | DEPPI     |
-| Professor Teste  | professor@ifce.edu.br    | `professor123` | PROFESSOR |
-| Aluno Teste      | aluno@ifce.edu.br        | `aluno123`     | ALUNO     |
+### Instituição
 
----
+| Nome | Sigla | Endereço |
+|---|---|---|
+| IFCE Campus Cedro | `IFCE-CED` | Alameda José Quintino, s/n - Prado |
 
-## 3. Permissões cadastradas
+### Usuários
 
-Total: **22 permissões**
+| Nome | E-mail | Senha | Papel |
+|---|---|---|---|
+| Administrador | `admin@ifce.edu.br` | `admin123` | ADMIN |
+| Membro DEPPI | `deppi@ifce.edu.br` | `deppi123` | DEPPI |
+| Professor Teste | `professor@ifce.edu.br` | `professor123` | PROFESSOR |
+| Aluno Teste | `aluno@ifce.edu.br` | `aluno123` | ALUNO |
 
-| Recurso      | Ações                            |
-|--------------|----------------------------------|
-| `aluno`      | create, read, update, delete     |
-| `professor`  | create, read, update, delete     |
-| `deppi`      | create, read, update, delete     |
-| `curso`      | create, read, update, delete     |
-| `inscricao`  | create, read, update, delete     |
-| `relatorio`  | create, read                     |
+## RBAC inicial
 
----
+O seed cadastra 22 permissões:
 
-## 4. Permissões por papel
+| Recurso | Ações |
+|---|---|
+| `aluno` | create, read, update, delete |
+| `professor` | create, read, update, delete |
+| `deppi` | create, read, update, delete |
+| `curso` | create, read, update, delete |
+| `inscricao` | create, read, update, delete |
+| `relatorio` | create, read |
 
-### ALUNO
+### Permissões por perfil
 
-| Recurso     | Ação   | Descrição                        |
-|-------------|--------|----------------------------------|
-| `curso`     | read   | Ver cursos disponíveis           |
-| `inscricao` | create | Se inscrever em um curso         |
-| `inscricao` | read   | Ver suas próprias inscrições     |
+- **ALUNO:** lê cursos, cria inscrição e consulta suas inscrições.
+- **PROFESSOR:** cria e lê cursos, edita o próprio curso e consulta suas inscrições.
+- **DEPPI:** administra professores, consulta e altera cursos, acompanha inscrições,
+  lista alunos e gera/consulta relatórios.
+- **ADMIN:** recebe todas as 22 permissões.
 
-### PROFESSOR
+## Perfis criados
 
-| Recurso     | Ação   | Descrição                        |
-|-------------|--------|----------------------------------|
-| `curso`     | create | Criar um curso de extensão       |
-| `curso`     | read   | Ver cursos                       |
-| `curso`     | update | Editar seu próprio curso         |
-| `inscricao` | read   | Ver inscrições do seu curso      |
+### Aluno
 
-### DEPPI
+| Campo | Valor |
+|---|---|
+| Matrícula | `20241001` |
+| Graduação | Análise e Desenvolvimento de Sistemas |
+| Semestre | 3 |
+| Escolaridade | Ensino Médio Completo |
+| Profissão | Estudante |
+| Renda per capita | `ATE_MEIO_SM` |
+| Pessoas na família | 4 |
+| Telefone | (88) 99999-0001 |
 
-| Recurso     | Ação   | Descrição                        |
-|-------------|--------|----------------------------------|
-| `professor` | create | Cadastrar professor              |
-| `professor` | read   | Listar professores               |
-| `professor` | update | Editar professor                 |
-| `curso`     | read   | Ver todos os cursos              |
-| `curso`     | update | Editar qualquer curso            |
-| `curso`     | delete | Cancelar curso                   |
-| `inscricao` | read   | Ver todas as inscrições          |
-| `inscricao` | update | Aprovar ou rejeitar inscrição    |
-| `inscricao` | delete | Cancelar inscrição               |
-| `aluno`     | read   | Listar alunos                    |
-| `relatorio` | create | Gerar relatório                  |
-| `relatorio` | read   | Ver relatórios gerados           |
+### Servidor DEPPI
 
-### ADMIN
+| Campo | Valor |
+|---|---|
+| SIAPE | `1234567` |
+| Matrícula | `SRV-001` |
+| Setor | DEPPI |
+| Lotação | IFCE-CED |
+| Situação | ATIVO |
+| Regime | DEDICACAO_EXCLUSIVA |
+| Jornada | INTEGRAL |
+| Cargo | Técnico Administrativo em Educação |
+| Início no serviço público | 01/03/2015 |
+| Posse na instituição | 10/01/2016 |
 
-Possui todas as **22 permissões** do sistema.
+### Servidor professor
 
-| Recurso     | Ações                         |
-|-------------|-------------------------------|
-| `aluno`     | create, read, update, delete  |
-| `professor` | create, read, update, delete  |
-| `deppi`     | create, read, update, delete  |
-| `curso`     | create, read, update, delete  |
-| `inscricao` | create, read, update, delete  |
-| `relatorio` | create, read                  |
+| Campo | Valor |
+|---|---|
+| SIAPE | `7654321` |
+| Matrícula | `SRV-002` |
+| Setor | Coord. de Informática |
+| Lotação | IFCE-CED |
+| Situação | ATIVO |
+| Regime | DEDICACAO_EXCLUSIVA |
+| Jornada | INTEGRAL |
+| Cargo | Professor do Ensino Básico, Técnico e Tecnológico |
+| Início no serviço público | 01/08/2012 |
+| Posse na instituição | 05/02/2013 |
 
----
+### Perfil acadêmico do professor
 
-## 5. Perfis
+| Campo | Valor |
+|---|---|
+| Titulação | Mestre |
+| Departamento | Tecnologia da Informação |
+| NCE | `NCE-TI-001` |
+| Disciplina de ingresso | Estruturas de Dados |
 
-### Perfil Aluno
+## Curso e dados relacionados
 
-| Campo                    | Valor                                    |
-|--------------------------|------------------------------------------|
-| Matrícula                | `20241001`                               |
-| Curso de Graduação       | Análise e Desenvolvimento de Sistemas   |
-| Semestre                 | 3                                        |
-| Grau de Instrução        | Ensino Médio Completo                    |
-| Profissão                | Estudante                                |
-| Renda Familiar Per Capita | `ATE_MEIO_SM`                           |
-| Nº de Pessoas na Família | 4                                        |
-| Telefone Celular         | (88) 99999-0001                          |
+O curso demonstrativo é:
 
-### Perfil Servidor — DEPPI
+| Campo | Valor |
+|---|---|
+| ID | `80770483-11e7-4145-ba20-f8b94139c294` |
+| Título | Introdução à Programação com Python |
+| Tipo de ação | CURSO |
+| Tipo | FORMACAO_CONTINUADA |
+| Área | Tecnologia e Produção |
+| Linha | Desenvolvimento Tecnológico |
+| Local | URBANO |
+| Oferta | PRESENCIAL |
+| Status | PUBLICADO |
+| Carga horária | 40h |
+| Período | 05/08/2024 a 30/09/2024 |
+| Vagas | mínimo 10, máximo 30 |
+| Fomento | Recursos próprios IFCE |
+| Programa | Programa de Extensão Tecnológica |
+| Município | Cedro |
+| Avaliação | PARTICIPACAO |
+| Divulgação | REDES_SOCIAIS |
+| Atividade | MINICURSO |
 
-| Campo                      | Valor                               |
-|----------------------------|-------------------------------------|
-| SIAPE                      | `1234567`                           |
-| Matrícula                  | `SRV-001`                           |
-| Setor SUAP                 | DEPPI                               |
-| Lotação SIAPE              | IFCE-CED                            |
-| Situação                   | ATIVO                               |
-| Regime de Trabalho         | DEDICACAO_EXCLUSIVA                 |
-| Jornada de Trabalho        | INTEGRAL                            |
-| Cargo                      | Técnico Administrativo em Educação  |
-| Início no Serviço Público  | 01/03/2015                          |
-| Data de Posse na Instituição | 10/01/2016                        |
+Também são criados:
 
-### Perfil Servidor — Professor
+- membro da equipe: `professor@ifce.edu.br`, coordenador, docente IFCE, oito
+  horas semanais, de 05/08/2024 a 30/09/2024, sem bolsa;
+- item de orçamento `MATERIAL_CONSUMO` no valor de R$ 500,00;
+- parceria com a Prefeitura Municipal de Cedro, formalizada por Termo de
+  Cooperação `TC-2024-001`.
 
-| Campo                      | Valor                                              |
-|----------------------------|----------------------------------------------------|
-| SIAPE                      | `7654321`                                          |
-| Matrícula                  | `SRV-002`                                          |
-| Setor SUAP                 | Coord. de Informática                              |
-| Lotação SIAPE              | IFCE-CED                                           |
-| Situação                   | ATIVO                                              |
-| Regime de Trabalho         | DEDICACAO_EXCLUSIVA                                |
-| Jornada de Trabalho        | INTEGRAL                                           |
-| Cargo                      | Professor do Ensino Básico, Técnico e Tecnológico  |
-| Início no Serviço Público  | 01/08/2012                                         |
-| Data de Posse na Instituição | 05/02/2013                                       |
+## Inscrição e relatório
 
-### Perfil Professor
+O aluno `aluno@ifce.edu.br` é inscrito no curso e sua inscrição fica
+`APROVADA`. O histórico registra a transição de `PENDENTE` para `APROVADA`,
+com aprovação manual realizada por `deppi@ifce.edu.br`.
 
-| Campo               | Valor                      |
-|---------------------|----------------------------|
-| Titulação           | Mestre                     |
-| Departamento        | Tecnologia da Informação   |
-| NCE                 | NCE-TI-001                 |
-| Disciplina Ingresso | Estruturas de Dados        |
+O seed ainda cria um relatório:
 
----
+| Campo | Valor |
+|---|---|
+| ID | `2c6dd88e-ff9e-484a-820c-840d97d44d3a` |
+| Tipo | `inscricoes_por_curso` |
+| Parâmetros | `{ cursoId, periodo: "2024-S2" }` |
+| Gerado por | `deppi@ifce.edu.br` |
 
-## 6. Curso de Extensão
-
-| Campo                  | Valor                                                              |
-|------------------------|--------------------------------------------------------------------|
-| **ID**                 | `80770483-11e7-4145-ba20-f8b94139c294`                            |
-| Título                 | Introdução à Programação com Python                                |
-| Tipo de Ação           | CURSO                                                              |
-| Tipo                   | FORMACAO_CONTINUADA                                                |
-| Área Temática          | Tecnologia e Produção                                              |
-| Linha de Extensão      | Desenvolvimento Tecnológico                                        |
-| Local de Atuação       | URBANO                                                             |
-| Modelo de Oferta       | PRESENCIAL                                                         |
-| Status                 | PUBLICADO                                                          |
-| Carga Horária          | 40h                                                                |
-| Data de Início         | 05/08/2024                                                         |
-| Data de Fim            | 30/09/2024                                                         |
-| Mín. Beneficiados      | 10                                                                 |
-| Máx. Beneficiados      | 30                                                                 |
-| Fomento                | Recursos próprios IFCE                                             |
-| Programa Institucional | Programa de Extensão Tecnológica                                   |
-| Município              | Cedro                                                              |
-| Forma de Avaliação     | PARTICIPACAO                                                       |
-| Forma de Divulgação    | REDES_SOCIAIS                                                      |
-| Atividade              | MINICURSO                                                          |
-
----
-
-## 7. Membro da Equipe
-
-| Campo               | Valor          |
-|---------------------|----------------|
-| Usuário             | professor@ifce.edu.br |
-| Categoria           | COORDENADOR    |
-| Vínculo             | DOCENTE_IFCE   |
-| Receberá Bolsa      | Não            |
-| Horas Semanais      | 8              |
-| Início Participação | 05/08/2024     |
-| Fim Participação    | 30/09/2024     |
-
----
-
-## 8. Item de Orçamento
-
-| Conta             | Valor     |
-|-------------------|-----------|
-| MATERIAL_CONSUMO  | R$ 500,00 |
-
----
-
-## 9. Parceria
-
-| Campo                  | Valor                        |
-|------------------------|------------------------------|
-| Instituição Parceira   | Prefeitura Municipal de Cedro |
-| Parceria Formalizada   | Sim                          |
-| Instrumento Utilizado  | Termo de Cooperação          |
-| Número do Instrumento  | `TC-2024-001`                |
-
----
-
-## 10. Inscrição
-
-| Campo  | Valor    |
-|--------|----------|
-| Aluno  | aluno@ifce.edu.br |
-| Curso  | Introdução à Programação com Python |
-| Status | APROVADA |
-
-### Histórico da Inscrição
-
-| Campo           | Valor                           |
-|-----------------|---------------------------------|
-| **ID**          | `6da3fa6f-e7ec-44e2-b404-c6dd6c66dc73` |
-| Status Anterior | PENDENTE                        |
-| Status Novo     | APROVADA                        |
-| Observação      | Aprovação manual durante seed.  |
-| Alterado por    | deppi@ifce.edu.br               |
-
----
-
-## 11. Relatório
-
-| Campo      | Valor                                      |
-|------------|--------------------------------------------|
-| **ID**     | `2c6dd88e-ff9e-484a-820c-840d97d44d3a`    |
-| Tipo       | `inscricoes_por_curso`                     |
-| Parâmetros | `{ cursoId, periodo: "2024-S2" }`          |
-| Gerado por | deppi@ifce.edu.br                          |
+Esses registros permitem testar rapidamente os endpoints de login, perfil,
+curso, inscrição e relatórios descritos em [`rotas.md`](./rotas.md).

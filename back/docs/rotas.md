@@ -1,149 +1,159 @@
-## Rotas
+# Catálogo de rotas
 
-### Autenticação (`/autenticacao`)
+Base local: `http://localhost:3000`.
 
-| Método | Rota | Descrição | Auth |
+Quando a coluna **Acesso** indicar JWT, envie:
+
+```text
+Authorization: Bearer <accessToken>
+```
+
+Papéis e permissões são verificados conforme o token do usuário.
+
+## Saúde e arquivos
+
+| Método | Caminho | Acesso | Finalidade |
 |---|---|---|---|
-| POST | `/autenticacao/registro` | Cadastro de aluno (papel ALUNO automático) | Não |
-| POST | `/autenticacao/login` | Login, retorna JWT | Não |
-| POST | `/autenticacao/esqueci-senha` | Solicita recuperação de senha (envia token) | Não |
-| POST | `/autenticacao/redefinir-senha` | Redefine a senha usando o token recebido | Não |
-| POST | `/autenticacao/refresh` | Renova o access token a partir do refresh token | Não |
-| POST | `/autenticacao/logout` | Revoga o refresh token | Não |
-| GET | `/autenticacao/me` | Dados do usuário logado (payload do token) | Sim |
+| GET | `/health` | público | verifica se a API está disponível |
+| GET | `/uploads/*` | público | entrega arquivo enviado |
 
-### Perfil (`/perfil`)
+## Autenticação
 
-| Método | Rota | Descrição | Auth |
+| Método | Caminho | Acesso | Finalidade |
 |---|---|---|---|
-| GET | `/perfil` | Retorna o perfil do usuário logado | Sim |
-| PATCH | `/perfil/aluno` | Cria ou atualiza o perfil do aluno logado | Sim |
-| PATCH | `/perfil/foto` | Atualiza a foto de perfil (campo `foto`, multipart) | Sim |
-| PATCH | `/perfil/telefone` | Atualiza o telefone | Sim |
-| PATCH | `/perfil/endereco` | Atualiza o endereço | Sim |
+| POST | `/autenticacao/registro` | público | cadastra aluno |
+| POST | `/autenticacao/login` | público | retorna access e refresh token |
+| POST | `/autenticacao/esqueci-senha` | público | inicia recuperação |
+| POST | `/autenticacao/redefinir-senha` | público | redefine senha com token |
+| POST | `/autenticacao/refresh` | público | renova access token |
+| POST | `/autenticacao/logout` | público | revoga refresh token |
+| GET | `/autenticacao/me` | JWT | retorna usuário autenticado |
 
-### Cursos (`/cursos`)
+## Perfil
 
-Fonte única de criação/gestão de cursos. `instituicaoId` **não** é enviado pelo cliente — é resolvido a partir do professor logado.
-
-| Método | Rota | Descrição | Auth / Papel |
+| Método | Caminho | Acesso | Finalidade |
 |---|---|---|---|
-| POST | `/cursos` | Cria curso | JWT — DEPPI, PROFESSOR |
-| POST | `/cursos/:id/imagem` | Envia imagem de capa do curso (campo `imagem`, multipart) | JWT — DEPPI, PROFESSOR |
-| GET | `/cursos` | Lista cursos (filtros de query: `status`, `tipo`, `tipoAcao`) | JWT |
-| GET | `/cursos/:id` | Detalha curso | JWT |
-| PATCH | `/cursos/:id` | Atualiza curso (DEPPI sempre; PROFESSOR só se for o dono) | JWT — DEPPI, PROFESSOR |
-| PATCH | `/cursos/:id/publicar` | Publica curso (`RASCUNHO → PUBLICADO`; DEPPI sempre, PROFESSOR só se for o dono) | JWT — DEPPI, PROFESSOR |
-| PATCH | `/cursos/:id/encerrar` | Encerra curso (`PUBLICADO`/`EM_ANDAMENTO → ENCERRADO`; DEPPI sempre, PROFESSOR só se for o dono) | JWT — DEPPI, PROFESSOR |
-| PATCH | `/cursos/:id/close` | Fecha as inscrições do curso | JWT — DEPPI, PROFESSOR |
-| DELETE | `/cursos/:id` | Cancela curso (`status → CANCELADO`, não remove o registro) | JWT — DEPPI, PROFESSOR |
+| GET | `/perfil` | JWT | consulta perfil do usuário |
+| PATCH | `/perfil/aluno` | JWT | cria ou altera perfil de aluno |
+| PATCH | `/perfil/foto` | JWT | recebe arquivo no campo `foto` |
+| PATCH | `/perfil/telefone` | JWT | atualiza telefone |
+| PATCH | `/perfil/endereco` | JWT | atualiza endereço |
 
-### Professor (`/professor`)
+## Cursos
 
-Endpoints com escopo restrito ao professor logado. A criação de curso é delegada ao módulo `cursos` (mesma regra de negócio, mesmo controller por baixo).
+`instituicaoId` é obtido a partir do usuário autenticado e não deve ser enviado
+pelo cliente.
 
-| Método | Rota | Descrição | Auth |
+| Método | Caminho | Acesso | Finalidade |
 |---|---|---|---|
-| GET | `/professor/perfil` | Ver perfil (dados de `PerfilProfessor`) | Sim |
-| PATCH | `/professor/perfil` | Atualizar perfil | Sim |
-| POST | `/professor/cursos` | Criar curso (via `CursosController.create`) | Sim |
-| GET | `/professor/cursos` | Listar meus cursos | Sim |
-| GET | `/professor/cursos/:id` | Detalhar curso próprio (com inscrições agrupadas por status) | Sim |
-| GET | `/professor/cursos/:id/inscricoes` | Listar inscritos do curso | Sim |
+| GET | `/cursos` | JWT | lista cursos; filtros: `status`, `tipo`, `tipoAcao` |
+| GET | `/cursos/:id` | JWT | detalha um curso |
+| POST | `/cursos` | JWT + DEPPI/PROFESSOR | cria curso |
+| POST | `/cursos/:id/imagem` | JWT + DEPPI/PROFESSOR | upload no campo `imagem` |
+| PATCH | `/cursos/:id` | JWT + DEPPI/PROFESSOR | altera curso; professor só altera o próprio |
+| PATCH | `/cursos/:id/publicar` | JWT + DEPPI/PROFESSOR | muda de RASCUNHO para PUBLICADO |
+| PATCH | `/cursos/:id/encerrar` | JWT + DEPPI/PROFESSOR | encerra curso publicado ou em andamento |
+| PATCH | `/cursos/:id/close` | JWT + DEPPI/PROFESSOR | fecha inscrições |
+| DELETE | `/cursos/:id` | JWT + DEPPI/PROFESSOR | cancela sem apagar o registro |
 
-### Inscrição (`/inscricao`)
+## Professor
 
-| Método | Rota | Descrição | Auth / Permissão |
+| Método | Caminho | Acesso | Finalidade |
 |---|---|---|---|
-| POST | `/inscricao/registrar-inscricao` | Aluno se inscreve em um curso | JWT — `inscricao:create` |
-| GET | `/inscricao/minhas` | Lista as inscrições do aluno logado | JWT — `inscricao:read` |
-| GET | `/inscricao/curso/:cursoId` | Lista inscrições de um curso (DEPPI, ou professor dono) | JWT — `inscricao:read` |
-| PATCH | `/inscricao/:id/aprovar` | Aprova inscrição (checa vaga disponível) | JWT — `inscricao:update` |
-| PATCH | `/inscricao/:id/rejeitar` | Rejeita inscrição | JWT — `inscricao:update` |
-| PATCH | `/inscricao/:id/cancelar` | Cancela inscrição | JWT — `inscricao:update` |
+| GET | `/professor/perfil` | PROFESSOR | consulta perfil docente |
+| PATCH | `/professor/perfil` | PROFESSOR | altera perfil docente |
+| POST | `/professor/cursos` | PROFESSOR | cria curso |
+| GET | `/professor/cursos` | PROFESSOR | lista cursos próprios |
+| GET | `/professor/cursos/:id` | PROFESSOR | detalha curso próprio e inscrições |
+| GET | `/professor/cursos/:id/inscricoes` | PROFESSOR | lista inscritos |
 
-> Toda mudança de status roda em transação e grava um registro em `InscricaoHistorico`. Se uma inscrição `APROVADA` é cancelada/rejeitada, o próximo da lista de espera é promovido automaticamente para `PENDENTE`.
+## Inscrições
 
-### Documentos da Inscrição (`/inscricao-documentos`)
-
-| Método | Rota | Descrição | Auth |
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| POST | `/inscricao-documentos/:id/documentos` | Envia documentos (campo `files`, até 10 arquivos) para a inscrição `:id` | Sim |
-| GET | `/inscricao-documentos/:id/documentos` | Lista documentos da inscrição | Sim |
-| GET | `/inscricao-documentos/:id/documentos/:documentoId/arquivo` | Baixa um documento | Sim |
+| POST | `/inscricao/registrar-inscricao` | `inscricao:create` | registra inscrição de aluno |
+| GET | `/inscricao/minhas` | `inscricao:read` | lista inscrições do aluno |
+| GET | `/inscricao/curso/:cursoId` | `inscricao:read` | lista inscrições do curso |
+| PATCH | `/inscricao/:id/aprovar` | `inscricao:update` | aprova se houver vaga |
+| PATCH | `/inscricao/:id/rejeitar` | `inscricao:update` | rejeita inscrição |
+| PATCH | `/inscricao/:id/cancelar` | `inscricao:update` | cancela inscrição |
 
-> Acesso restrito a: ADMIN/DEPPI (sempre), o próprio aluno dono da inscrição, ou o professor dono do curso.
+Alterações de status são transacionais e registradas em
+`InscricaoHistorico`. Se uma inscrição aprovada for liberada, a próxima da
+lista de espera pode ser promovida.
 
-### DEPPI (`/deppi`)
+## Documentos
 
-| Método | Rota | Descrição | Auth / Papel |
+| Método | Caminho | Acesso | Finalidade |
 |---|---|---|---|
-| GET | `/deppi` | Lista usuários DEPPI | JWT — ADMIN, `deppi:read` |
-| GET | `/deppi/:id` | Busca DEPPI pelo id | JWT — ADMIN, `deppi:read` |
-| POST | `/deppi` | Cadastra usuário DEPPI (`User` + `PerfilServidor`) | JWT — ADMIN, `deppi:create` |
-| PATCH | `/deppi/:id` | Atualiza dados do DEPPI | JWT — ADMIN, `deppi:update` |
-| DELETE | `/deppi/:id` | Desativa o DEPPI (soft delete: `ativo: false`) | JWT — ADMIN, `deppi:delete` |
+| POST | `/inscricao-documentos/:id/documentos` | JWT com escopo | até 10 arquivos no campo `files` |
+| GET | `/inscricao-documentos/:id/documentos` | JWT com escopo | lista documentos |
+| GET | `/inscricao-documentos/:id/documentos/:documentoId/arquivo` | JWT com escopo | baixa documento |
 
-### Relatórios (`/relatorios`)
+O acesso é permitido a ADMIN/DEPPI, ao aluno dono da inscrição ou ao professor
+dono do curso.
 
-Suportam `?formato=json|xlsx|pdf` (padrão: `json`).
+## DEPPI
 
-| Método | Rota | Descrição | Auth / Permissão |
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| GET | `/relatorios/courses` | Lista cursos cadastrados | JWT — `relatorio:read` |
-| GET | `/relatorios/enrollments/:cursoId` | Inscritos de um curso | JWT — `relatorio:read` |
-| GET | `/relatorios/enrollments-by-status` | Total de inscrições por status | JWT — `relatorio:read` |
-| GET | `/relatorios/general` | Relatório consolidado geral | JWT — `relatorio:read` |
+| GET | `/deppi` | `deppi:read` | lista usuários DEPPI |
+| GET | `/deppi/:id` | `deppi:read` | consulta DEPPI |
+| POST | `/deppi` | `deppi:create` | cadastra DEPPI e perfil servidor |
+| PATCH | `/deppi/:id` | `deppi:update` | altera DEPPI |
+| DELETE | `/deppi/:id` | `deppi:delete` | desativa DEPPI |
 
-### Instituições (`/instituicoes`)
+As operações são restritas ao ADMIN.
 
-| Método | Rota | Descrição | Auth / Permissão |
+## Relatórios
+
+Todas aceitam `?formato=json|xlsx|pdf`; o padrão é `json`.
+
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| GET | `/instituicoes` | Lista instituições | JWT — ADMIN, `instituicao:read` |
-| GET | `/instituicoes/:id` | Detalha instituição | JWT — ADMIN, `instituicao:read` |
-| POST | `/instituicoes` | Cria instituição | JWT — ADMIN, `instituicao:create` |
-| PATCH | `/instituicoes/:id` | Atualiza instituição | JWT — ADMIN, `instituicao:update` |
-| PATCH | `/instituicoes/:id/status` | Ativa/desativa instituição | JWT — ADMIN, `instituicao:update` |
-| DELETE | `/instituicoes/:id` | Remove instituição | JWT — ADMIN, `instituicao:delete` |
+| GET | `/relatorios/courses` | `relatorio:read` | lista cursos |
+| GET | `/relatorios/enrollments/:cursoId` | `relatorio:read` | lista inscritos |
+| GET | `/relatorios/enrollments-by-status` | `relatorio:read` | agrupa inscrições por status |
+| GET | `/relatorios/general` | `relatorio:read` | relatório consolidado |
 
-### Usuários (`/usuarios`)
+## Instituições
 
-| Método | Rota | Descrição | Auth / Permissão |
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| GET | `/usuarios` | Lista usuários (filtros na query) | JWT — ADMIN, `usuario:read` |
-| GET | `/usuarios/:id` | Detalha usuário | JWT — ADMIN, `usuario:read` |
-| PATCH | `/usuarios/:id` | Atualiza usuário | JWT — ADMIN, `usuario:update` |
-| DELETE | `/usuarios/:id` | Remove usuário | JWT — ADMIN, `usuario:delete` |
+| GET | `/instituicoes` | `instituicao:read` | lista instituições |
+| GET | `/instituicoes/:id` | `instituicao:read` | detalha instituição |
+| POST | `/instituicoes` | `instituicao:create` | cria instituição |
+| PATCH | `/instituicoes/:id` | `instituicao:update` | altera instituição |
+| PATCH | `/instituicoes/:id/status` | `instituicao:update` | ativa ou desativa |
+| DELETE | `/instituicoes/:id` | `instituicao:delete` | remove instituição |
 
-### Permissões (`/permissoes`)
+## Usuários
 
-Gestão do RBAC: papéis, permissões e seus vínculos.
-
-| Método | Rota | Descrição | Auth / Permissão |
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| GET | `/permissoes/papeis` | Lista papéis | JWT — ADMIN, `permissao:read` |
-| GET | `/permissoes` | Lista permissões | JWT — ADMIN, `permissao:read` |
-| POST | `/permissoes` | Cria permissão | JWT — ADMIN, `permissao:create` |
-| POST | `/permissoes/usuarios/:userId/papeis` | Vincula papel a um usuário | JWT — ADMIN, `permissao:update` |
-| DELETE | `/permissoes/usuarios/:userId/papeis/:papelId` | Desvincula papel de um usuário | JWT — ADMIN, `permissao:update` |
-| POST | `/permissoes/papeis/:papelId/permissoes` | Vincula permissão a um papel | JWT — ADMIN, `permissao:update` |
-| DELETE | `/permissoes/papeis/:papelId/permissoes/:permissaoId` | Desvincula permissão de um papel | JWT — ADMIN, `permissao:update` |
+| GET | `/usuarios` | `usuario:read` | lista com filtros |
+| GET | `/usuarios/:id` | `usuario:read` | detalha usuário |
+| PATCH | `/usuarios/:id` | `usuario:update` | altera usuário |
+| DELETE | `/usuarios/:id` | `usuario:delete` | remove usuário |
 
-### Departamentos (`/departamentos`)
+## Permissões
 
-| Método | Rota | Descrição | Auth / Permissão |
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| GET | `/departamentos` | Lista departamentos (filtros na query) | JWT — ADMIN, `departamento:read` |
-| GET | `/departamentos/:id` | Detalha departamento | JWT — ADMIN, `departamento:read` |
-| POST | `/departamentos` | Cria departamento | JWT — ADMIN, `departamento:create` |
-| PATCH | `/departamentos/:id` | Atualiza departamento | JWT — ADMIN, `departamento:update` |
-| DELETE | `/departamentos/:id` | Remove departamento | JWT — ADMIN, `departamento:delete` |
+| GET | `/permissoes/papeis` | `permissao:read` | lista papéis |
+| GET | `/permissoes` | `permissao:read` | lista permissões |
+| POST | `/permissoes` | `permissao:create` | cria permissão |
+| POST | `/permissoes/usuarios/:userId/papeis` | `permissao:update` | vincula papel |
+| DELETE | `/permissoes/usuarios/:userId/papeis/:papelId` | `permissao:update` | remove papel |
+| POST | `/permissoes/papeis/:papelId/permissoes` | `permissao:update` | vincula permissão |
+| DELETE | `/permissoes/papeis/:papelId/permissoes/:permissaoId` | `permissao:update` | remove permissão |
 
-### Outras
+## Departamentos
 
-| Método | Rota | Descrição | Auth |
+| Método | Caminho | Permissão | Finalidade |
 |---|---|---|---|
-| GET | `/health` | Healthcheck | Não |
-| GET | `/uploads/*` | Arquivos estáticos enviados (ex.: imagens de curso) | Não |
-
----
+| GET | `/departamentos` | `departamento:read` | lista departamentos |
+| GET | `/departamentos/:id` | `departamento:read` | detalha departamento |
+| POST | `/departamentos` | `departamento:create` | cria departamento |
+| PATCH | `/departamentos/:id` | `departamento:update` | altera departamento |
+| DELETE | `/departamentos/:id` | `departamento:delete` | remove departamento |
