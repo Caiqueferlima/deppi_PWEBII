@@ -1,9 +1,9 @@
 import { useState, type SubmitEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import { login } from "../services/authService";
-import type { LoginCredentials, LoginResponse } from "../types/auth";
+import type { LoginCredentials } from "../types/auth";
 import AlertIcon from "../components/AlertIcon";
 import BrandLogo from "../components/BrandLogo";
-import LoginSuccess from "../components/LoginSuccess";
 import PasswordField from "../components/PasswordField";
 
 const inputClass =
@@ -13,12 +13,11 @@ const inputClass =
   "disabled:cursor-not-allowed disabled:opacity-60";
 
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [session, setSession] = useState<LoginResponse | null>(null);
 
   async function handleSubmit(event: SubmitEvent) {
     event.preventDefault();
@@ -31,8 +30,8 @@ export default function LoginPage() {
         senha: password,
       };
 
-      const result = await login(credentials);
-      setSession(result);
+      await login(credentials);
+      navigate("/inicio", { replace: true });
     } catch (error: unknown) {
       if (error instanceof Error) {
         setError(error.message);
@@ -42,10 +41,6 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  if (session) {
-    return <LoginSuccess onBack={() => setSession(null)} />;
   }
 
   return (
