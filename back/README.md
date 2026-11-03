@@ -171,6 +171,18 @@ prisma/
 
 Para entender o fluxo interno, leia [`docs/ARQUITETURA.md`](./docs/ARQUITETURA.md).
 
+## Testes básicos
+
+Execute:
+
+```powershell
+npm test
+```
+
+Os testes usam o runner nativo do Node.js e cobrem o healthcheck, respostas
+`404`, proteção de rota autenticada e validação do login. Eles usam uma porta
+temporária e não executam operações no banco.
+
 ## Comandos de manutenção
 
 ```powershell

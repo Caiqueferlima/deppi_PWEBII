@@ -195,6 +195,17 @@ cd C:\Users\Think\Desktop\PWEBII\deppi_PWEBII\back
 npm start
 ```
 
+### Executar os testes básicos da API
+
+```powershell
+cd C:\Users\Think\Desktop\PWEBII\deppi_PWEBII\back
+npm test
+```
+
+Os testes verificam o healthcheck, o retorno de rotas inexistentes, a proteção
+de uma rota autenticada e a validação do corpo de login. Eles iniciam a API em
+uma porta temporária e não alteram o banco de dados.
+
 ## Solução de problemas
 
 ### Erro de conexão com MySQL
