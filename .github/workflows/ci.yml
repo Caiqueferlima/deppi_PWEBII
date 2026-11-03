@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back
+    env:
+      DATABASE_URL: ******localhost:3306/api-ger-extensao
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 3306
+      DATABASE_USER: pweb
+      DATABASE_PASSWORD: pweb1-projeto-ifce
+      DATABASE_NAME: api-ger-extensao
+      DATABASE_SSL: false
+      JWT_SECRET: ci-test-secret
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: back/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npm run check
+
+      - name: Executar testes
+        run: npm test
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: front
+    env:
+      VITE_API_URL: http://localhost:3000
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar tipos
+        run: npm run check
+
+      - name: Executar lint
+        run: npm run lint
+
+      - name: Gerar build
+        run: npm run build

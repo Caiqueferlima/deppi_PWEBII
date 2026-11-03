@@ -225,6 +225,13 @@ npm run check
 Esses comandos executam a verificação de tipos do TypeScript sem iniciar os
 servidores e sem modificar o banco de dados.
 
+### Integração contínua
+
+O workflow [`ci.yml`](./.github/workflows/ci.yml) executa automaticamente no
+GitHub, em pushes e pull requests para `main`. Ele instala as dependências,
+verifica os tipos e executa os testes do backend; no frontend, também executa
+lint e build.
+
 ## Solução de problemas
 
 ### Erro de conexão com MySQL

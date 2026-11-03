@@ -86,6 +86,9 @@ git diff --check
 git status
 ```
 
+O GitHub também executa essas verificações pelo workflow de integração
+contínua em [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
 ## Convenção de commits
 
 Use mensagens curtas no formato:
