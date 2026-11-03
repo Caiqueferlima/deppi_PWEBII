@@ -269,6 +269,7 @@ npx tsx prisma/seed.ts
 ## Documentação adicional
 
 - [Guia de contribuição](./CONTRIBUTING.md)
+- [Documentação do frontend](./front/README.md)
 - [Documentação da API](./back/README.md)
 - [Arquitetura](./back/docs/ARQUITETURA.md)
 - [Dados criados pelo seed](./back/docs/SEED.md)
