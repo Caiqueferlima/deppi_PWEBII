@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import ThemeToggle from "../components/ThemeToggle";
 
 type IconName =
   | "home"
@@ -15,8 +16,11 @@ type IconName =
   | "clock"
   | "check"
   | "close"
+  | "slash"
   | "lock"
-  | "hourglass";
+  | "hourglass"
+  | "play"
+  | "sun";
 
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, string> = {
@@ -35,10 +39,13 @@ function Icon({ name }: { name: IconName }) {
     moon: "M20 15.5A8 8 0 0 1 8.5 4 8 8 0 1 0 20 15.5Z",
     arrow: "M5 12h14M13 6l6 6-6 6",
     clock: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
-    check: "m7 12 3 3 7-7",
-    close: "m8 8 8 8M16 8l-8 8",
+    check: "m8 12 2.5 2.5L16 9M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+    close: "m9 9 6 6M15 9l-6 6M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+    slash: "M7 17 17 7M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
     lock: "M6 10h12v10H6zM9 10V7a3 3 0 0 1 6 0v3",
     hourglass: "M6 3h12M6 21h12M8 3v4l8 10v4M16 3v4L8 17",
+    play: "m9 6 9 6-9 6Z",
+    sun: "M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6 7 7M17 17l1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4M16 12a4 4 0 1 1-8 0 4 4 0 0 1 8 0Z",
   };
 
   return (
@@ -80,12 +87,12 @@ const enrollmentStatuses = [
   { label: "Pendente", value: "412", color: "bg-[#c26b2c] text-[#c26b2c]", icon: "clock" as const },
   { label: "Deferida", value: "1.480", color: "bg-[#369557] text-[#369557]", icon: "check" as const },
   { label: "Indeferida", value: "298", color: "bg-[#c7373b] text-[#c7373b]", icon: "close" as const },
-  { label: "Cancelada", value: "127", color: "bg-[#777777] text-[#777777]", icon: "lock" as const },
+  { label: "Cancelada", value: "127", color: "bg-[#777777] text-[#777777]", icon: "slash" as const },
 ];
 
 const courseStatuses = [
   { label: "Em análise", value: "6", color: "bg-[#c26b2c] text-[#c26b2c]", icon: "hourglass" as const },
-  { label: "Em andamento", value: "17", color: "bg-[#16813b] text-[#16813b]", icon: "check" as const },
+  { label: "Em andamento", value: "17", color: "bg-[#16813b] text-[#16813b]", icon: "play" as const },
   { label: "Concluído", value: "12", color: "bg-[#2455dc] text-[#2455dc]", icon: "check" as const },
   { label: "Fechado", value: "3", color: "bg-[#777777] text-[#777777]", icon: "lock" as const },
 ];
@@ -147,13 +154,7 @@ export default function AdminHome() {
           </div>
 
           <div className="flex items-center gap-4">
-            <button
-              type="button"
-              className="rounded-md p-2 text-ink-2 hover:bg-surface-2"
-              aria-label="Alternar tema"
-            >
-              <Icon name="moon" />
-            </button>
+            <ThemeToggle />
             <div className="hidden text-right sm:block">
               <p className="text-sm font-medium text-ink">Administrador</p>
               <p className="text-xs text-ink-3">ADMIN</p>
@@ -243,7 +244,7 @@ export default function AdminHome() {
               <h2 className="font-display text-base font-semibold">
                 Cursos por situação
               </h2>
-              <div className="mt-5 flex items-center gap-8">
+              <div className="mt-5 flex flex-col items-center gap-8 sm:flex-row sm:items-center">
                 <div
                   className="grid size-36 shrink-0 place-items-center rounded-full"
                   style={{

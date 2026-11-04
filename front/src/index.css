@@ -39,6 +39,18 @@
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
+
+  .dark {
+    --color-page: #17191c;
+    --color-surface: #222529;
+    --color-sidebar: #1d2024;
+    --color-surface-2: #2b3035;
+    --color-line: #3a4047;
+    --color-line-strong: #515962;
+    --color-ink: #f4f2ee;
+    --color-ink-2: #c2c7cc;
+    --color-ink-3: #969da5;
+  }
 }
 
 /* Listras 135° (10 px / período 20 px) usadas nas capas */

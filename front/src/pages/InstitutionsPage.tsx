@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
+import ThemeToggle from "../components/ThemeToggle";
 import {
   createInstitution,
   deleteInstitution,
@@ -229,7 +230,7 @@ export default function InstitutionsPage() {
             </button>
             <span>Instituições</span>
           </div>
-          <div className="flex items-center gap-3"><div className="hidden text-right sm:block"><p className="text-sm font-medium">Administrador</p><p className="text-xs text-ink-3">ADMIN</p></div><div className="grid size-9 place-items-center rounded-full bg-accent text-xs font-semibold text-white">AD</div></div>
+          <div className="flex items-center gap-3"><ThemeToggle /><div className="hidden text-right sm:block"><p className="text-sm font-medium">Administrador</p><p className="text-xs text-ink-3">ADMIN</p></div><div className="grid size-9 place-items-center rounded-full bg-accent text-xs font-semibold text-white">AD</div></div>
         </header>
         <div className="w-full px-5 py-7 sm:px-8 sm:py-9">
           <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
