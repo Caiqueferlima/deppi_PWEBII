@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import BrandLogo from "../components/BrandLogo";
 
@@ -10,7 +11,12 @@ type IconName =
   | "user"
   | "menu"
   | "moon"
-  | "arrow";
+  | "arrow"
+  | "clock"
+  | "check"
+  | "close"
+  | "lock"
+  | "hourglass";
 
 function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, string> = {
@@ -28,6 +34,11 @@ function Icon({ name }: { name: IconName }) {
     menu: "M4 7h16M4 12h16M4 17h16",
     moon: "M20 15.5A8 8 0 0 1 8.5 4 8 8 0 1 0 20 15.5Z",
     arrow: "M5 12h14M13 6l6 6-6 6",
+    clock: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+    check: "m7 12 3 3 7-7",
+    close: "m8 8 8 8M16 8l-8 8",
+    lock: "M6 10h12v10H6zM9 10V7a3 3 0 0 1 6 0v3",
+    hourglass: "M6 3h12M6 21h12M8 3v4l8 10v4M16 3v4L8 17",
   };
 
   return (
@@ -66,52 +77,69 @@ const metrics = [
 ];
 
 const enrollmentStatuses = [
-  { label: "Pendente", value: "412", color: "bg-[#d97706]" },
-  { label: "Deferida", value: "1.480", color: "bg-[#4d8a61]" },
-  { label: "Indeferida", value: "298", color: "bg-[#b42318]" },
-  { label: "Cancelada", value: "127", color: "bg-[#7b7770]" },
+  { label: "Pendente", value: "412", color: "bg-[#c26b2c] text-[#c26b2c]", icon: "clock" as const },
+  { label: "Deferida", value: "1.480", color: "bg-[#369557] text-[#369557]", icon: "check" as const },
+  { label: "Indeferida", value: "298", color: "bg-[#c7373b] text-[#c7373b]", icon: "close" as const },
+  { label: "Cancelada", value: "127", color: "bg-[#777777] text-[#777777]", icon: "lock" as const },
 ];
 
 const courseStatuses = [
-  { label: "Em análise", value: "6", color: "bg-[#d97706]" },
-  { label: "Em andamento", value: "17", color: "bg-[#4d8a61]" },
-  { label: "Concluído", value: "12", color: "bg-[#356a9a]" },
-  { label: "Fechado", value: "3", color: "bg-[#7b7770]" },
+  { label: "Em análise", value: "6", color: "bg-[#c26b2c] text-[#c26b2c]", icon: "hourglass" as const },
+  { label: "Em andamento", value: "17", color: "bg-[#16813b] text-[#16813b]", icon: "check" as const },
+  { label: "Concluído", value: "12", color: "bg-[#2455dc] text-[#2455dc]", icon: "check" as const },
+  { label: "Fechado", value: "3", color: "bg-[#777777] text-[#777777]", icon: "lock" as const },
 ];
 
 export default function AdminHome() {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const currentDate = new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  }).format(new Date());
+
   return (
     <div className="flex min-h-screen bg-page text-ink">
-      <aside className="hidden w-[260px] shrink-0 border-r border-line bg-sidebar px-3 py-6 lg:block">
-        <div className="px-3">
-          <BrandLogo />
-        </div>
+      <div
+        className={`shrink-0 overflow-hidden transition-[width] duration-300 ${
+          isSidebarOpen ? "w-[260px]" : "w-0"
+        }`}
+      >
+        <aside className="h-full w-[260px] border-r border-line bg-sidebar px-3 py-6">
+          <div className="px-3">
+            <BrandLogo />
+          </div>
 
-        <nav className="mt-10 space-y-1" aria-label="Navegação principal">
-          {navigation.map((item) => (
-            <Link
-              key={item.label}
-              to={item.href ?? (item.active ? "/inicio" : "#")}
-              className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
-                item.active
-                  ? "bg-[#f0dfd4] font-medium text-accent"
-                  : "text-ink-2 hover:bg-surface-2 hover:text-ink"
-              }`}
-            >
-              <Icon name={item.icon} />
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-      </aside>
+          <nav className="mt-10 space-y-1" aria-label="Navegação principal">
+            {navigation.map((item) => (
+              <Link
+                key={item.label}
+                to={item.href ?? (item.active ? "/inicio" : "#")}
+                className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
+                  item.active
+                    ? "bg-[#f0dfd4] font-medium text-accent"
+                    : "text-ink-2 hover:bg-surface-2 hover:text-ink"
+                }`}
+                onClick={() => setIsSidebarOpen(false)}
+              >
+                <Icon name={item.icon} />
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </aside>
+      </div>
 
       <main className="min-w-0 flex-1">
         <header className="flex h-[72px] items-center justify-between border-b border-line bg-surface px-6 sm:px-10">
           <div className="flex items-center gap-3 text-sm text-ink-2">
             <button
               type="button"
-              className="rounded-md p-1.5 hover:bg-surface-2 lg:hidden"
-              aria-label="Abrir menu"
+              className="rounded-md p-1.5 hover:bg-surface-2"
+              aria-label={isSidebarOpen ? "Fechar menu" : "Abrir menu"}
+              aria-expanded={isSidebarOpen}
+              onClick={() => setIsSidebarOpen((open) => !open)}
             >
               <Icon name="menu" />
             </button>
@@ -136,14 +164,14 @@ export default function AdminHome() {
           </div>
         </header>
 
-        <div className="mx-auto max-w-[1180px] px-6 py-9 sm:px-10 sm:py-12">
+        <div className="w-full px-5 py-7 sm:px-8 sm:py-9">
           <div className="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
               <h1 className="font-display text-[30px] leading-9 font-semibold text-ink sm:text-[36px]">
                 Bom dia, administrador
               </h1>
               <p className="mt-1 text-sm text-ink-2">
-                Segunda-feira, 5 de outubro de 2026
+                {currentDate.charAt(0).toUpperCase() + currentDate.slice(1)}
               </p>
             </div>
             <Link
@@ -168,7 +196,11 @@ export default function AdminHome() {
                 } ${index === 4 ? "sm:border-l-0 lg:border-l" : ""}`}
               >
                 <p className="text-xs text-ink-3">{label}</p>
-                <p className="mt-1 font-display text-[25px] leading-8 font-semibold">
+                <p
+                  className={`mt-1 font-display text-[25px] leading-8 font-semibold ${
+                    label === "Vagas restantes" ? "text-accent" : "text-ink"
+                  }`}
+                >
                   {value}
                 </p>
               </div>
@@ -188,19 +220,20 @@ export default function AdminHome() {
                   Detalhes
                 </Link>
               </div>
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6 space-y-4">
                 {enrollmentStatuses.map((status) => (
-                  <div
-                    key={status.label}
-                    className="rounded-lg border border-line bg-page p-4"
-                  >
-                    <div className="flex items-center gap-2 text-xs text-ink-2">
-                      <span className={`size-2 rounded-full ${status.color}`} />
+                  <div key={status.label} className="grid grid-cols-[116px_1fr_52px] items-center gap-4 text-sm">
+                    <span className={`flex items-center gap-2 ${status.color.split(" ")[1]}`}>
+                      <Icon name={status.icon} />
                       {status.label}
+                    </span>
+                    <div className="h-3 overflow-hidden rounded-sm bg-surface-2">
+                      <div
+                        className={`h-full rounded-sm ${status.color}`}
+                        style={{ width: `${(Number(status.value.replace(".", "")) / 1480) * 100}%` }}
+                      />
                     </div>
-                    <p className="mt-2 font-display text-2xl font-semibold">
-                      {status.value}
-                    </p>
+                    <strong className="text-right font-display text-base text-ink">{status.value}</strong>
                   </div>
                 ))}
               </div>
@@ -210,20 +243,32 @@ export default function AdminHome() {
               <h2 className="font-display text-base font-semibold">
                 Cursos por situação
               </h2>
-              <div className="mt-5 flex items-center gap-5 border-b border-line pb-5">
-                <p className="font-display text-4xl font-semibold">38</p>
-                <p className="text-sm text-ink-2">cursos cadastrados</p>
-              </div>
-              <div className="mt-5 grid grid-cols-2 gap-x-5 gap-y-4">
-                {courseStatuses.map((status) => (
-                  <div key={status.label} className="flex items-center justify-between gap-3 text-sm">
-                    <span className="flex items-center gap-2 text-ink-2">
-                      <span className={`size-2 rounded-full ${status.color}`} />
-                      {status.label}
-                    </span>
-                    <strong className="font-display text-base">{status.value}</strong>
+              <div className="mt-5 flex items-center gap-8">
+                <div
+                  className="grid size-36 shrink-0 place-items-center rounded-full"
+                  style={{
+                    background:
+                      "conic-gradient(#d97706 0 15.8%, #4d8a61 15.8% 60.5%, #356a9a 60.5% 92.1%, #7b7770 92.1% 100%)",
+                  }}
+                >
+                  <div className="grid size-24 place-items-center rounded-full bg-surface">
+                    <div className="text-center">
+                      <span className="block font-display text-3xl font-semibold leading-8">38</span>
+                      <span className="text-xs text-ink-2">cursos</span>
+                    </div>
                   </div>
-                ))}
+                </div>
+                <div className="min-w-0 flex-1 space-y-5">
+                  {courseStatuses.map((status) => (
+                    <div key={status.label} className="flex items-center justify-between gap-3 text-base">
+                      <span className={`flex items-center gap-2 ${status.color.split(" ")[1]}`}>
+                        <Icon name={status.icon} />
+                        {status.label}
+                      </span>
+                      <strong className="font-display text-lg">{status.value}</strong>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </section>
