@@ -68,7 +68,7 @@ const navigation = [
   { label: "Início", icon: "home" as const, active: true },
   { label: "Cursos", icon: "school" as const },
   { label: "Instituições", icon: "building" as const, href: "/instituicoes" },
-  { label: "Usuários", icon: "users" as const },
+  { label: "Usuários", icon: "users" as const, href: "/usuarios" },
   { label: "Relatórios", icon: "chart" as const },
   { label: "Perfil", icon: "user" as const },
 ];

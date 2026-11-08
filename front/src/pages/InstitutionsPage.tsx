@@ -210,7 +210,7 @@ export default function InstitutionsPage() {
               ["Início", "home", "/inicio"],
               ["Cursos", "school", "#"],
               ["Instituições", "building", "/instituicoes"],
-              ["Usuários", "users", "#"],
+              ["Usuários", "users", "/usuarios"],
               ["Relatórios", "chart", "#"],
               ["Perfil", "user", "#"],
             ] as const).map(([label, icon, href]) => (

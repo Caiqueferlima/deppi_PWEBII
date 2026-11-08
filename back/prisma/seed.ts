@@ -192,6 +192,7 @@ async function main() {
     { nome: 'Professor Teste', email: 'professor@ifce.edu.br', senha: 'professor123', papel: professor },
     { nome: 'Aluno Teste',     email: 'aluno@ifce.edu.br',     senha: 'aluno123',     papel: aluno },
   ]
+  const dataInicioProjeto = new Date('2026-06-02T00:00:00.000Z')
 
   const usersMap: Record<string, string> = {}
 
@@ -199,12 +200,13 @@ async function main() {
     const senhaHash = await hash(u.senha, 10)
     const user = await prisma.user.upsert({
       where:  { email: u.email },
-      update: {},
+      update: { createdAt: dataInicioProjeto },
       create: {
         nome:         u.nome,
         email:        u.email,
         senhaHash,
         ativo:        true,
+        createdAt:    dataInicioProjeto,
         instituicaoId: instituicao.id,
       },
     })
