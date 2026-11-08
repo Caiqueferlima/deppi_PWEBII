@@ -214,7 +214,7 @@ export default function InstitutionsPage() {
               ["Relatórios", "chart", "#"],
               ["Perfil", "user", "#"],
             ] as const).map(([label, icon, href]) => (
-              <Link key={label} to={href} onClick={() => setIsSidebarOpen(false)} className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm ${label === "Instituições" ? "bg-[#f0dfd4] font-medium text-accent" : "text-ink-2 hover:bg-surface-2"}`}>
+              <Link key={label} to={href} onClick={() => setIsSidebarOpen(false)} className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm ${label === "Instituições" ? "bg-accent-soft font-medium text-accent" : "text-ink-2 hover:bg-surface-2"}`}>
                 <ActionIcon kind={icon} />
                 {label}
               </Link>

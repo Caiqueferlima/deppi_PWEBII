@@ -46,8 +46,8 @@ function roleDescription(name: string) {
 
 function roleBadgeClass(name: string) {
   return ["ADMIN", "DEPPI"].includes(name)
-    ? "bg-[#FDF0EC] text-[#7A2712]"
-    : "bg-[#F1F2F4] text-[#535A60]";
+    ? "bg-danger-soft text-danger"
+    : "bg-surface-2 text-ink-2";
 }
 
 function Modal({ user, roles, onClose, onGrant, submitting, error }: {
@@ -66,8 +66,8 @@ function Modal({ user, roles, onClose, onGrant, submitting, error }: {
         <div className="space-y-4 px-8 py-4">
           <p className="text-base text-ink-2">Escolha o cargo para <strong className="text-ink">{user.nome}</strong>. Os cargos atuais são mantidos.</p>
           {error && <p role="alert" className="rounded-lg border border-danger/25 bg-danger/8 px-3 py-2 text-sm text-danger">{error}</p>}
-          {availableRoles.length ? <div className="space-y-4">{availableRoles.map((role) => <label key={role.id} className={`flex cursor-pointer items-start gap-4 rounded-lg border px-4 py-4 ${selectedRole === role.id ? "border-accent bg-[#FDF7F5]" : "border-line-strong"}`}><input type="radio" name="role" value={role.id} checked={selectedRole === role.id} onChange={() => setSelectedRole(role.id)} className="mt-1 size-5 accent-accent" /><span><strong className="text-base">{roleLabel(role.nome)}</strong><span className="mt-0.5 block text-base text-ink-2">{roleDescription(role.nome)}</span></span></label>)}</div> : <p className="rounded-lg bg-surface-2 px-3 py-3 text-sm text-ink-2">Este usuário já possui os cargos disponíveis.</p>}
-          {availableRoles.length > 0 && <p className="flex items-center gap-2 rounded-lg border border-[#F6C98F] bg-[#FFF7ED] px-4 py-3 text-sm text-[#9A3412]"><span aria-hidden="true" className="text-lg">△</span>Esta ação não pode ser desfeita pela interface.</p>}
+          {availableRoles.length ? <div className="space-y-4">{availableRoles.map((role) => <label key={role.id} className={`flex cursor-pointer items-start gap-4 rounded-lg border px-4 py-4 ${selectedRole === role.id ? "border-link bg-danger-soft" : "border-line-strong"}`}><input type="radio" name="role" value={role.id} checked={selectedRole === role.id} onChange={() => setSelectedRole(role.id)} className="mt-1 size-5 accent-accent" /><span><strong className="text-base">{roleLabel(role.nome)}</strong><span className="mt-0.5 block text-base text-ink-2">{roleDescription(role.nome)}</span></span></label>)}</div> : <p className="rounded-lg bg-surface-2 px-3 py-3 text-sm text-ink-2">Este usuário já possui os cargos disponíveis.</p>}
+          {availableRoles.length > 0 && <p className="flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-warning"><span aria-hidden="true" className="text-lg">△</span>Esta ação não pode ser desfeita pela interface.</p>}
         </div>
         <div className="flex justify-end gap-2 border-t border-line px-8 py-4">
           <button type="button" onClick={onClose} className="h-12 rounded-lg border border-line-strong bg-surface px-5 text-base font-medium hover:bg-surface-2">Cancelar</button>
@@ -117,7 +117,7 @@ export default function UsersPage() {
     finally { setSubmitting(false); }
   }
 
-  const pageLink = (label: string, href: string, icon: IconName): ReactNode => <Link key={label} to={href} onClick={() => setSidebarOpen(false)} className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm ${label === "Usuários" ? "bg-[#f0dfd4] font-medium text-accent" : "text-ink-2 hover:bg-surface-2"}`}><Icon name={icon} />{label}</Link>;
+  const pageLink = (label: string, href: string, icon: IconName): ReactNode => <Link key={label} to={href} onClick={() => setSidebarOpen(false)} className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm ${label === "Usuários" ? "bg-accent-soft font-medium text-accent" : "text-ink-2 hover:bg-surface-2"}`}><Icon name={icon} />{label}</Link>;
   return (
     <div className="flex min-h-screen bg-page text-ink">
       <div className={`shrink-0 overflow-hidden transition-[width] duration-300 ${sidebarOpen ? "w-[260px]" : "w-0"}`}><aside className="h-full w-[260px] border-r border-line bg-sidebar px-3 py-6"><div className="px-3"><BrandLogo /></div><nav className="mt-10 space-y-1" aria-label="Navegação principal">{navigation.map(([label, icon, href]) => pageLink(label, href, icon))}</nav></aside></div>
@@ -133,7 +133,7 @@ export default function UsersPage() {
           </div>
           {error && !selected && <p role="alert" className="mt-4 rounded-lg border border-danger/25 bg-danger/8 px-3 py-2 text-sm text-danger">{error}</p>}
           <div className="mt-5 overflow-hidden rounded-xl border border-line bg-surface"><div className="hidden grid-cols-[1.4fr_1.3fr_1fr_1fr_1.1fr] gap-4 border-b border-line bg-sidebar px-5 py-4 text-sm font-medium text-ink-2 sm:grid"><span>Usuário</span><span>E-mail</span><span>Cargos</span><span>Criado em</span><span /></div>
-            {loading ? <p className="px-5 py-10 text-center text-sm text-ink-2">Carregando usuários...</p> : filtered.length === 0 ? <p className="px-5 py-10 text-center text-sm text-ink-2">Nenhum usuário encontrado.</p> : filtered.map((user) => <div key={user.id} className="grid gap-3 border-b border-line px-5 py-5 last:border-b-0 sm:grid-cols-[1.4fr_1.3fr_1fr_1fr_1.1fr] sm:items-center sm:gap-4"><div className="flex items-center gap-3"><div className="grid size-9 shrink-0 place-items-center rounded-full bg-[#f0dfd4] text-xs font-semibold text-accent">{getInitials(user.nome)}</div><p className="text-base font-medium">{user.nomeUsual || user.nome}</p></div><span className="break-all text-base text-ink-2">{user.email}</span><div className="flex flex-wrap gap-1.5 font-mono">{user.roles.length ? user.roles.map((role) => <span key={role} className={`rounded-md px-2 py-1 text-xs font-medium ${roleBadgeClass(role)}`}>{roleLabel(role)}</span>) : <span className="text-sm text-ink-3">Sem cargo</span>}</div><span className="font-mono text-sm text-ink-2">{new Intl.DateTimeFormat("pt-BR").format(new Date(user.createdAt))}</span>{!user.roles.includes("ADMIN") && <button type="button" onClick={() => { setSelected(user); setError(null); }} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-white px-3 text-xs font-semibold text-black hover:bg-surface-2"><Icon name="shieldPerson" className="size-5" />Conceder cargo</button>}</div>)}
+            {loading ? <p className="px-5 py-10 text-center text-sm text-ink-2">Carregando usuários...</p> : filtered.length === 0 ? <p className="px-5 py-10 text-center text-sm text-ink-2">Nenhum usuário encontrado.</p> : filtered.map((user) => <div key={user.id} className="grid gap-3 border-b border-line px-5 py-5 last:border-b-0 sm:grid-cols-[1.4fr_1.3fr_1fr_1fr_1.1fr] sm:items-center sm:gap-4"><div className="flex items-center gap-3"><div className="grid size-9 shrink-0 place-items-center rounded-full bg-accent-soft text-xs font-semibold text-accent">{getInitials(user.nome)}</div><p className="text-base font-medium">{user.nomeUsual || user.nome}</p></div><span className="break-all text-base text-ink-2">{user.email}</span><div className="flex flex-wrap gap-1.5 font-mono">{user.roles.length ? user.roles.map((role) => <span key={role} className={`rounded-md px-2 py-1 text-xs font-medium ${roleBadgeClass(role)}`}>{roleLabel(role)}</span>) : <span className="text-sm text-ink-3">Sem cargo</span>}</div><span className="font-mono text-sm text-ink-2">{new Intl.DateTimeFormat("pt-BR").format(new Date(user.createdAt))}</span>{!user.roles.includes("ADMIN") && <button type="button" onClick={() => { setSelected(user); setError(null); }} className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-line-strong bg-surface px-3 text-xs font-semibold text-ink hover:bg-surface-2"><Icon name="shieldPerson" className="size-5" />Conceder cargo</button>}</div>)}
           </div>
         </div>
       </main>

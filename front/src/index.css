@@ -1,3 +1,4 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600&display=swap");
 @import "tailwindcss";
 
 /* Tokens do style guide DEPPI (tema claro) */
@@ -6,6 +7,12 @@
   --color-link: #d97706;
   --color-link-hover: #f59e0b;
   --color-danger: #b42318;
+  --color-danger-soft: #fdf0ec;
+  --color-warning: #b45309;
+  --color-success: #15803d;
+  --color-info: #1d4ed8;
+  --color-muted-status: #5c5c5c;
+  --color-accent-soft: #f0dfd4;
 
   --color-ink: #1a1a1a;
   --color-ink-2: #5c5c5c;
@@ -20,7 +27,7 @@
 
   --font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
   --font-sans: "Inter Tight", ui-sans-serif, system-ui, sans-serif;
-  --font-mono: "Roboto Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
 }
 
 @layer base {
@@ -38,6 +45,20 @@
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  button:disabled {
+    cursor: not-allowed;
   }
 
   .dark {

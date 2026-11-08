@@ -84,17 +84,17 @@ const metrics = [
 ];
 
 const enrollmentStatuses = [
-  { label: "Pendente", value: "412", color: "bg-[#c26b2c] text-[#c26b2c]", icon: "clock" as const },
-  { label: "Deferida", value: "1.480", color: "bg-[#369557] text-[#369557]", icon: "check" as const },
-  { label: "Indeferida", value: "298", color: "bg-[#c7373b] text-[#c7373b]", icon: "close" as const },
-  { label: "Cancelada", value: "127", color: "bg-[#777777] text-[#777777]", icon: "slash" as const },
+  { label: "Pendente", value: "412", color: "bg-warning text-warning", icon: "clock" as const },
+  { label: "Deferida", value: "1.480", color: "bg-success text-success", icon: "check" as const },
+  { label: "Indeferida", value: "298", color: "bg-danger text-danger", icon: "close" as const },
+  { label: "Cancelada", value: "127", color: "bg-muted-status text-muted-status", icon: "slash" as const },
 ];
 
 const courseStatuses = [
-  { label: "Em análise", value: "6", color: "bg-[#c26b2c] text-[#c26b2c]", icon: "hourglass" as const },
-  { label: "Em andamento", value: "17", color: "bg-[#16813b] text-[#16813b]", icon: "play" as const },
-  { label: "Concluído", value: "12", color: "bg-[#2455dc] text-[#2455dc]", icon: "check" as const },
-  { label: "Fechado", value: "3", color: "bg-[#777777] text-[#777777]", icon: "lock" as const },
+  { label: "Em análise", value: "6", color: "bg-warning text-warning", icon: "hourglass" as const },
+  { label: "Em andamento", value: "17", color: "bg-success text-success", icon: "play" as const },
+  { label: "Concluído", value: "12", color: "bg-info text-info", icon: "check" as const },
+  { label: "Fechado", value: "3", color: "bg-muted-status text-muted-status", icon: "lock" as const },
 ];
 
 export default function AdminHome() {
@@ -125,7 +125,7 @@ export default function AdminHome() {
                 to={item.href ?? (item.active ? "/inicio" : "#")}
                 className={`flex h-11 items-center gap-3 rounded-lg px-3 text-sm transition-colors ${
                   item.active
-                    ? "bg-[#f0dfd4] font-medium text-accent"
+                    ? "bg-accent-soft font-medium text-accent"
                     : "text-ink-2 hover:bg-surface-2 hover:text-ink"
                 }`}
                 onClick={() => setIsSidebarOpen(false)}
@@ -249,7 +249,7 @@ export default function AdminHome() {
                   className="grid size-36 shrink-0 place-items-center rounded-full"
                   style={{
                     background:
-                      "conic-gradient(#d97706 0 15.8%, #4d8a61 15.8% 60.5%, #356a9a 60.5% 92.1%, #7b7770 92.1% 100%)",
+                      "conic-gradient(var(--color-warning) 0 15.8%, var(--color-success) 15.8% 60.5%, var(--color-info) 60.5% 92.1%, var(--color-muted-status) 92.1% 100%)",
                   }}
                 >
                   <div className="grid size-24 place-items-center rounded-full bg-surface">
